@@ -1,6 +1,6 @@
 ---
 description: hello
-agent: build
+agent: code
 ---
 
 # 执行如下流程：
