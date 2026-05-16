@@ -1,4 +1,4 @@
-# Go 语言编码规范
+# Python 编码规范
 
 ## 目录
 - [项目结构规范](#项目结构规范)
@@ -9,8 +9,8 @@
 - [控制结构](#控制结构)
 - [函数设计](#函数设计)
 - [错误处理](#错误处理)
-- [包管理](#包管理)
-- [并发编程](#并发编程)
+- [模块和包管理](#模块和包管理)
+- [面向对象编程](#面向对象编程)
 - [性能优化](#性能优化)
 - [测试规范](#测试规范)
 - [工具使用](#工具使用)
@@ -19,56 +19,55 @@
 
 ## 项目结构规范
 
-注意：**存量项目已经有项目结构时无需遵守此规范，按照已有项目结构组织代码**
+注意：**存量项目既有项目结构时无需遵守此规范，按照已有项目结构组织代码**
 
 ### 目录组织
 
 ```
-EasyStrategyGo/
-├── App/                    # 应用程序目录
-│   ├── B2BDispatcher/     # 具体应用模块
-│   │   ├── Config/        # 配置模块
-│   │   ├── Dispatcher/    # 调度/路由模块
-│   │   └── main.go        # 程序入口
-├── internal/              # 内部共享包（私有包）
-│   ├── B2BBridge/        # B2B 桥接模块
-│   ├── BizCommon/        # 业务公共模块
-│   └── DSBridge/         # DS 桥接模块
-├── pkg/                  # 公共工具包（可复用）
-│   ├── DBBridge/        # 数据库桥接
-│   ├── Golog/           # 日志工具
-│   └── Utils/           # 通用工具
-└── clib/                # C 语言库文件
+my_project/
+├── src/                    # 源代码目录
+│   ├── __init__.py
+│   ├── main.py            # 程序入口
+│   ├── models/            # 数据模型
+│   ├── services/          # 业务逻辑
+│   └── utils/             # 工具函数
+├── tests/                 # 测试目录
+│   ├── __init__.py
+│   ├── test_models/
+│   └── test_services/
+├── docs/                  # 文档目录
+├── requirements.txt       # 依赖文件
+├── setup.py              # 包配置
+└── README.md             # 项目说明
 ```
 
 ### 包命名规范
-- **App 层**: 使用小写包名，如 `package config`, `package dispatcher`
-- **internal 层**: 包名与目录名一致，如 `package b2bbridge`
-- **pkg 层**: 包名简洁明了，如 `package golog`, `package dbbridge`
+- **包名**: 使用小写，简短，如 `models`, `services`
+- **模块名**: 使用小写，下划线分隔，如 `user_service.py`
+- **每个包必须有 `__init__.py`** 文件
 
 ---
 
 ## 代码格式化
 
 ### 基本要求
-- 始终使用 `go fmt` 格式化代码
-- 使用 Tab 缩进，而非空格
-- 行长建议不超过 120 字符
+- 遵循 PEP 8 规范
+- 使用 4 个空格缩进，禁止使用 Tab
+- 行长建议不超过 79 字符（代码）或 72 字符（注释）
 - 文件末尾保留一个换行符
+- 使用空行分隔函数和类定义（顶级定义之间两行，类内方法之间一行）
 
 ### 示例
-```go
-// 正确
-func calculate(a, b int) int {
-	result := a + b
-	return result
-}
-
-// 错误 - 不必要的空格
-func calculate(a, b int) int {
-    result := a + b  // 使用空格而非 Tab
+```python
+# 正确
+def calculate(a: int, b: int) -> int:
+    result = a + b
     return result
-}
+
+# 错误 - 使用 Tab 缩进
+def calculate(a, b):
+	result = a + b  # 使用了 Tab
+	return result
 ```
 
 ---
@@ -77,114 +76,149 @@ func calculate(a, b int) int {
 
 ### 基本原则
 - 使用有意义的名称，避免单字母变量（循环计数器除外）
-- 遵循 Go 的可见性规则：大写开头 = 导出，小写开头 = 私有
-- 包名使用小写，避免下划线和驼峰
-- 接口命名：单个方法用 `-er` 后缀（如 `Reader`），多方法用 `Interface` 后缀
+- 遵循 Python 的命名约定
+- 避免使用保留字和内置函数名
 
 ### 命名约定
 | 类型 | 规范 | 示例 |
 |------|------|------|
-| 包名 | 小写，简短 | `encoding/json` |
-| 变量 | 驼峰式 | `userName`, `count` |
-| 常量 | 驼峰式 | `MaxRetries`, `defaultTimeout` |
-| 函数/方法 | 驼峰式 | `CalculateSum`, `parseInput` |
-| 类型/结构 | 驼峰式 | `UserConfig`, `httpRequest` |
-| 接口 | `-er` 或 `-or` 后缀 | `Reader`, `Writer`, `Stringer` |
-| 错误变量 | 以 `Err` 前缀 | `ErrNotFound`, `ErrInvalidInput` |
+| 模块/包 | 小写，下划线分隔 | `user_service`, `data_utils` |
+| 变量 | 小写，下划线分隔 | `user_name`, `count` |
+| 常量 | 大写，下划线分隔 | `MAX_RETRIES`, `DEFAULT_TIMEOUT` |
+| 函数/方法 | 小写，下划线分隔 | `calculate_sum`, `parse_input` |
+| 类名 | 大驼峰（PascalCase） | `UserConfig`, `HttpRequest` |
+| 异常类 | 大驼峰，Error 后缀 | `ValidationError`, `ConnectionError` |
+| 私有变量/方法 | 前导下划线 | `_internal_var`, `_helper_method` |
+| 类型别名 | 大驼峰 | `UserId`, `CallbackType` |
 
 ### 示例
-```go
-// 正确
-package httpclient
+```python
+# 正确
+MAX_CONNECTIONS = 100
+DEFAULT_TIMEOUT = 30
 
-var (
-    ErrTimeout     = errors.New("connection timeout")
-    DefaultRetries = 3
-)
+class UserService:
+    def __init__(self, db_connection: DatabaseConnection):
+        self._db = db_connection
+    
+    def get_user_by_id(self, user_id: int) -> Optional[User]:
+        pass
 
-type Config struct {
-    Host    string
-    Timeout time.Duration
-}
-
-// 错误 - 包名大写
-package HTTPClient  // 应为 httpclient
+# 错误 - 命名不规范
+maxConnections = 100  # 应为 MAX_CONNECTIONS
+def getUserById():    # 应为 get_user_by_id
+    pass
 ```
 
 ---
 
 ## 注释规范
 
-### 包注释
-- 每个包必须有包注释
-- 位于 `package` 声明之前
-- 描述包的用途和主要内容
+### 模块注释
+- 每个模块文件开头应有文档字符串
+- 描述模块的用途和主要内容
 
-```go
-// Package config 提供配置文件读取和解析功能
-package config
+```python
+"""
+用户服务模块。
+
+提供用户相关的业务逻辑操作，包括用户创建、查询、更新和删除。
+"""
 ```
 
 ### 函数/方法注释
-- 每个导出的函数/方法必须有注释
-- 以函数名开头，说明功能和参数
-- 简洁明了，避免冗余
+- 使用 docstring 格式
+- 说明功能、参数和返回值
+- 使用 Google、NumPy 或 Sphinx 风格
 
-```go
-// ParseConfig 读取并解析配置文件，返回 Config 实例
-// 如果文件不存在或格式错误，返回相应的 error
-func ParseConfig(path string) (*Config, error) {
-    // ...
-}
+```python
+def parse_config(path: str) -> Config:
+    """读取并解析配置文件，返回 Config 实例。
+    
+    Args:
+        path: 配置文件路径
+        
+    Returns:
+        Config 实例
+        
+    Raises:
+        FileNotFoundError: 如果文件不存在
+        ValueError: 如果文件格式错误
+    """
+    pass
+```
+
+### 类注释
+- 类定义后立即添加 docstring
+- 描述类的职责和使用方式
+
+```python
+class UserService:
+    """用户服务类。
+    
+    提供用户相关的业务逻辑操作，包括用户创建、查询、更新和删除。
+    
+    Attributes:
+        db: 数据库连接实例
+    """
+    pass
 ```
 
 ### 行内注释
 - 解释"为什么"而非"是什么"
-- 使用 `//` 加空格
+- 使用 `# ` 加空格
+- 与代码至少一个空格分隔
 - 复杂逻辑必须添加说明
+
+```python
+# 正确
+x = x + 1  # 补偿边界情况
+
+# 错误
+x = x + 1  # x 加 1
+```
 
 ---
 
 ## 变量和常量
 
 ### 变量声明
-- 优先使用短变量声明 `:=`
-- 多个同类型变量可分组声明
-- 避免不必要的零值初始化
+- 使用类型注解（推荐）
+- 避免不必要的 None 初始化
+- 使用有意义的默认值
 
-```go
-// 正确
-var (
-    count     int
-    name      string
-    isActive  bool
-)
+```python
+# 正确
+count: int = 0
+name: str = ""
+is_active: bool = False
 
-// 正确 - 短声明
-result := calculate()
+# 正确 - 类型注解
+users: list[User] = []
+config: dict[str, Any] = {}
 
-// 错误 - 不必要的显式初始化
-var result int = 0  // 应为 result := 0 或直接 var result int
+# 避免 - 不必要的显式初始化
+result = None  # 除非确实需要
+result = calculate()  # 直接赋值更好
 ```
 
 ### 常量声明
-- 相关常量使用 `iota` 分组
-- 明确类型避免隐式转换问题
+- 模块级别定义
+- 使用大写和下划线
+- 明确用途
 
-```go
-// 正确
-type Status int
-
-const (
-    StatusPending Status = iota
-    StatusActive
-    StatusInactive
-)
-
-// 错误 - 魔术数字
-if status == 0 {  // 应使用 StatusPending
-    // ...
+```python
+# 正确
+MAX_RETRIES = 3
+DEFAULT_TIMEOUT = 30.0
+STATUS_CODES = {
+    "success": 200,
+    "error": 500,
 }
+
+# 错误 - 魔术数字
+if status == 200:  # 应使用 STATUS_CODES["success"]
+    pass
 ```
 
 ---
@@ -192,80 +226,82 @@ if status == 0 {  // 应使用 StatusPending
 ## 控制结构
 
 ### if 语句
-- 条件表达式不加括号
-- 简短的条件变量可在 if 中声明
-- 避免不必要的 else
+- 条件表达式不加括号（除非必要）
+- 使用 truthiness 检查
+- 避免与 True/False/None 直接比较（除非必要）
 
-```go
-// 正确
-if err := parse(data); err != nil {
-    return err
-}
+```python
+# 正确
+if items:
+    process(items)
 
-// 正确 - 提前返回
-if !isValid {
-    return ErrInvalid
-}
-process()
+if not is_valid:
+    return error
 
-// 避免 - 不必要的 else
-if isValid {
-    process()
-} else {
-    return ErrInvalid
-}
+if name is None:
+    return default_name
+
+# 错误
+if len(items) > 0:  # 应为 if items:
+    pass
+
+if is_valid == True:  # 应为 if is_valid:
+    pass
 ```
 
 ### for 循环
-- 使用 `:=` 声明循环变量
-- 范围遍历使用 `range`
+- 优先使用 enumerate 获取索引
+- 使用列表推导式（简单情况）
+- 使用生成器（大数据集）
 
-```go
-// 正确
-for i := 0; i < len(items); i++ {
-    // ...
-}
+```python
+# 正确
+for i, item in enumerate(items):
+    print(f"{i}: {item}")
 
-for _, item := range items {
-    // ...
-}
+# 列表推导式
+squares = [x**2 for x in range(10)]
 
-// 正确 - 同时获取索引和值
-for i, item := range items {
-    // ...
-}
+# 生成器表达式
+squares_gen = (x**2 for x in range(1000000))
+
+# 错误 - 使用索引访问
+for i in range(len(items)):
+    print(f"{i}: {items[i]}")
 ```
 
-### switch 语句
-- 默认带有 break 行为
-- 使用 `fallthrough` 显式穿透
+### while 循环
+- 确保有退出条件
+- 使用 break/continue 谨慎
 
-```go
-// 正确
-switch status {
-case "active":
-    handleActive()
-case "inactive":
-    handleInactive()
-default:
-    handleUnknown()
-}
+```python
+# 正确
+while not done:
+    result = process_next()
+    if result is None:
+        break
 ```
 
-### select 语句
-- 用于 channel 操作
-- `default` 用于非阻塞操作
+### try/except 语句
+- 捕获具体异常，避免裸 except
+- 异常范围尽量小
 
-```go
-// 正确
-select {
-case msg := <-ch:
-    handle(msg)
-case <-ctx.Done():
-    return ctx.Err()
-case <-time.After(timeout):
-    return ErrTimeout
-}
+```python
+# 正确
+try:
+    result = parse(data)
+except ValueError as e:
+    logger.error(f"Parse failed: {e}")
+    return default
+except FileNotFoundError:
+    logger.error("File not found")
+    raise
+
+# 错误 - 捕获所有异常
+try:
+    result = parse(data)
+except:  # 太宽泛
+    pass
 ```
 
 ---
@@ -274,45 +310,40 @@ case <-time.After(timeout):
 
 ### 函数签名
 - 参数数量适中（建议不超过 5 个）
-- 多参数同类型可合并声明
-- 返回错误应作为最后一个返回值
+- 使用类型注解
+- 使用默认参数（谨慎处理可变默认值）
 
-```go
-// 正确
-func NewClient(host string, port int, timeout time.Duration) (*Client, error) {
-    // ...
-}
+```python
+# 正确
+def create_client(
+    host: str,
+    port: int = 8080,
+    timeout: float = 30.0,
+    retries: int = 3,
+) -> Client:
+    pass
 
-// 避免 - 参数过多
-func NewClient(host string, port int, timeout time.Duration, retries int, 
-               debug bool, logger *log.Logger) (*Client, error) {
-    // 应使用配置结构体
-}
+# 错误 - 可变默认值
+def add_item(item: str, items: list = []):  # 应为 items: list | None = None
+    items.append(item)
+    return items
 ```
 
 ### 返回值
-- 错误优先返回
-- 明确命名返回值（仅在必要时）
-- 避免裸返回（`return` 不带值）
+- 明确返回类型
+- 使用 Optional 表示可能返回 None
+- 使用元组返回多个值
 
-```go
-// 正确
-func Divide(a, b float64) (float64, error) {
-    if b == 0 {
-        return 0, errors.New("division by zero")
-    }
-    return a / b, nil
-}
+```python
+# 正确
+def divide(a: float, b: float) -> tuple[float, str | None]:
+    if b == 0:
+        return 0.0, "Division by zero"
+    return a / b, None
 
-// 正确 - 命名返回值（复杂情况）
-func ParseRequest(data []byte) (req *Request, err error) {
-    if len(data) == 0 {
-        return nil, errors.New("empty data")
-    }
-    req = &Request{}
-    // ... 解析逻辑
-    return req, nil
-}
+# 正确 - Optional
+def find_user(user_id: int) -> Optional[User]:
+    pass
 ```
 
 ### 函数长度
@@ -325,240 +356,207 @@ func ParseRequest(data []byte) (req *Request, err error) {
 ## 错误处理
 
 ### 基本原则
-- 错误是值，应显式处理
-- 不要忽略错误（使用 `_` 需谨慎）
-- 错误信息应清晰且有上下文
+- 使用异常而非返回码
+- 异常信息应清晰且有上下文
+- 使用异常链保留原始异常
 
-```go
-// 正确
-result, err := parse(data)
-if err != nil {
-    return fmt.Errorf("parse failed: %w", err)
-}
+```python
+# 正确
+try:
+    result = parse(data)
+except ValueError as e:
+    raise ParseError(f"Failed to parse data: {e}") from e
 
-// 错误 - 忽略错误
-result, _ := parse(data)  // 除非确定不需要错误
-
-// 错误 - 无上下文
-if err != nil {
-    return err  // 应添加上下文
-}
+# 错误 - 忽略异常
+try:
+    result = parse(data)
+except:
+    pass
 ```
 
-### 错误包装
-- 使用 `fmt.Errorf` + `%w` 包装错误
-- 使用 `errors.Is` 和 `errors.As` 检查错误
+### 自定义异常
+- 继承 Exception 或更具体的异常类
+- 提供有意义的错误信息
 
-```go
-// 正确
-if err != nil {
-    return fmt.Errorf("database query failed: %w", err)
-}
-
-// 检查错误
-if errors.Is(err, ErrNotFound) {
-    // 处理特定错误
-}
-
-// 提取错误类型
-var dbErr *DatabaseError
-if errors.As(err, &dbErr) {
-    // 使用 dbErr
-}
+```python
+class ValidationError(Exception):
+    """验证错误异常。"""
+    
+    def __init__(self, field: str, message: str):
+        self.field = field
+        self.message = message
+        super().__init__(f"Validation error on {field}: {message}")
 ```
 
-### 自定义错误
-- 实现 `error` 接口
-- 提供错误类型判断能力
+### 异常层次结构
+- 创建基类异常
+- 具体异常继承基类
 
-```go
-type ValidationError struct {
-    Field   string
-    Message string
-}
+```python
+class AppError(Exception):
+    """应用基础异常。"""
+    pass
 
-func (e *ValidationError) Error() string {
-    return fmt.Sprintf("validation error on %s: %s", e.Field, e.Message)
-}
+class UserNotFoundError(AppError):
+    """用户未找到异常。"""
+    pass
+
+class InvalidUserError(AppError):
+    """无效用户异常。"""
+    pass
 ```
 
 ---
 
-## 包管理
+## 模块和包管理
 
 ### 导入规范
 - 标准库优先
 - 第三方库次之
 - 本地包最后
-- 使用 `go mod` 管理依赖
+- 每组之间空一行
 
-```go
-// 正确
-import (
-    // 标准库
-    "context"
-    "fmt"
-    "time"
-    
-    // 第三方
-    "github.com/gin-gonic/gin"
-    
-    // 本地包
-    "myapp/config"
-    "myapp/utils"
-)
+```python
+# 正确
+import os
+import sys
+from typing import Optional
+
+import requests
+from flask import Flask
+
+from .models import User
+from .services import user_service
+
+# 错误 - 导入顺序混乱
+from .models import User
+import os
+import requests
 ```
 
-### 循环导入
-- 避免包之间的循环依赖
-- 使用接口解耦
+### 避免循环导入
+- 使用局部导入解耦
+- 重构代码结构
+
+### `__init__.py` 使用
+- 可以暴露公共 API
+- 避免在 `__init__.py` 中写业务逻辑
+
+```python
+# __init__.py
+"""用户服务包。"""
+
+from .user_service import UserService
+from .user_model import User
+
+__all__ = ["UserService", "User"]
+```
 
 ---
 
-## 并发编程
+## 面向对象编程
 
-### Goroutine
-- 明确 goroutine 的生命周期
-- 避免 goroutine 泄漏
-- 使用 `context` 控制取消
+### 类设计
+- 单一职责原则
+- 使用属性装饰器管理访问
+- 优先组合而非继承
 
-```go
-// 正确 - 使用 context 控制
-func Process(ctx context.Context, data []Item) error {
-    for _, item := range data {
-        select {
-        case <-ctx.Done():
-            return ctx.Err()
-        default:
-            go processItem(ctx, item)
-        }
-    }
-    return nil
-}
+```python
+# 正确
+class UserService:
+    def __init__(self, db: DatabaseConnection):
+        self._db = db
+    
+    @property
+    def db(self) -> DatabaseConnection:
+        return self._db
+    
+    def create_user(self, name: str) -> User:
+        pass
 
-// 错误 - goroutine 泄漏
-func Process(data []Item) {
-    for _, item := range data {
-        go func(i Item) {
-            // 没有取消机制
-            processItem(i)
-        }(item)
-    }
-}
+# 错误 - 过度继承
+class AdminUserService(UserService, AuthService, LogService):
+    pass
 ```
 
-### Channel
-- 明确 channel 的所有者
-- 由发送方关闭 channel
-- 使用缓冲 channel 需谨慎
+### 魔术方法
+- 实现常用的魔术方法
+- `__str__` 和 `__repr__` 至少实现一个
 
-```go
-// 正确
-func Worker(ctx context.Context, jobs <-chan Job, results chan<- Result) {
-    for {
-        select {
-        case job, ok := <-jobs:
-            if !ok {
-                return
-            }
-            results <- process(job)
-        case <-ctx.Done():
-            return
-        }
-    }
-}
+```python
+class User:
+    def __init__(self, id: int, name: str):
+        self.id = id
+        self.name = name
+    
+    def __repr__(self):
+        return f"User(id={self.id}, name='{self.name}')"
+    
+    def __str__(self):
+        return self.name
 ```
 
-### WaitGroup
-- 使用 `defer wg.Done()`
-- `Add` 在 goroutine 启动前调用
+### 数据类
+- 使用 dataclass 简化数据类
+- 使用 frozen 实现不可变
 
-```go
-// 正确
-var wg sync.WaitGroup
-for _, item := range items {
-    wg.Add(1)
-    go func(i Item) {
-        defer wg.Done()
-        process(i)
-    }(item)
-}
-wg.Wait()
-```
+```python
+from dataclasses import dataclass
 
-### Mutex
-- 使用指针接收者
--  defer 解锁
-- 优先使用 channel
-
-```go
-// 正确
-type Counter struct {
-    mu    sync.Mutex
-    value int
-}
-
-func (c *Counter) Increment() {
-    c.mu.Lock()
-    defer c.mu.Unlock()
-    c.value++
-}
+@dataclass(frozen=True)
+class UserConfig:
+    host: str
+    port: int
+    timeout: float = 30.0
 ```
 
 ---
 
 ## 性能优化
 
-### 切片
-- 预分配容量（已知大小时）
-- 使用 `copy` 而非逐个赋值
+### 列表/字典推导式
+- 优先使用推导式
+- 复杂逻辑使用生成器
 
-```go
-// 正确
-result := make([]int, 0, len(input))
-for _, v := range input {
-    result = append(result, v*2)
-}
+```python
+# 正确
+squares = [x**2 for x in range(10)]
+user_map = {u.id: u for u in users}
 
-// 错误 - 无预分配
-var result []int
-for _, v := range input {
-    result = append(result, v*2)  // 多次扩容
-}
+# 大数据集使用生成器
+squares_gen = (x**2 for x in range(1000000))
 ```
 
 ### 字符串拼接
-- 使用 `strings.Builder`
-- 避免 `+` 拼接大量字符串
+- 使用 f-string（Python 3.6+）
+- 使用 join 拼接大量字符串
 
-```go
-// 正确
-var sb strings.Builder
-for _, s := range parts {
-    sb.WriteString(s)
-}
-result := sb.String()
+```python
+# 正确
+name = "World"
+message = f"Hello, {name}!"
 
-// 避免 - 低效拼接
-result := ""
-for _, s := range parts {
-    result += s  // 每次创建新字符串
-}
+# 大量字符串拼接
+parts = ["hello", "world", "python"]
+result = " ".join(parts)
+
+# 避免 - 低效拼接
+result = ""
+for part in parts:
+    result += part + " "
 ```
 
-### Map
-- 预分配容量（已知大小时）
-- 注意并发访问
+### 缓存
+- 使用 functools.lru_cache 或 functools.cache
 
-```go
-// 正确 - 预分配
-m := make(map[string]int, expectedSize)
+```python
+from functools import lru_cache
 
-// 正确 - 并发安全
-type SafeMap struct {
-    mu   sync.RWMutex
-    data map[string]int
-}
+@lru_cache(maxsize=128)
+def fibonacci(n: int) -> int:
+    if n < 2:
+        return n
+    return fibonacci(n - 1) + fibonacci(n - 2)
 ```
 
 ---
@@ -566,75 +564,90 @@ type SafeMap struct {
 ## 测试规范
 
 ### 测试文件
-- 与被测文件同名 + `_test.go` 后缀
-- 测试函数以 `Test` 开头
-- 表驱动测试优先
+- 与被测模块对应
+- 测试文件以 `test_` 开头
+- 测试函数以 `test_` 开头
 
-```go
-// 正确
-func TestCalculate(t *testing.T) {
-    tests := []struct {
-        name     string
-        input    int
-        expected int
-    }{
-        {"positive", 5, 10},
-        {"negative", -3, -6},
-        {"zero", 0, 0},
-    }
-    
-    for _, tt := range tests {
-        t.Run(tt.name, func(t *testing.T) {
-            result := calculate(tt.input)
-            if result != tt.expected {
-                t.Errorf("got %d, want %d", result, tt.expected)
-            }
-        })
-    }
-}
+```python
+# test_user_service.py
+import pytest
+from src.services.user_service import UserService
+
+def test_create_user():
+    service = UserService()
+    user = service.create_user("John")
+    assert user.name == "John"
+    assert user.id is not None
 ```
 
-### 基准测试
-- 使用 `testing.B`
-- 调用 `b.ReportAllocs()`
+### 使用 pytest fixture
+- 使用 fixture 管理测试数据
+- 使用 parametrize 参数化测试
 
-```go
-func BenchmarkCalculate(b *testing.B) {
-    b.ReportAllocs()
-    for i := 0; i < b.N; i++ {
-        calculate(i)
-    }
-}
+```python
+import pytest
+
+@pytest.fixture
+def user_service():
+    return UserService()
+
+@pytest.mark.parametrize("name,expected", [
+    ("John", "John"),
+    ("Jane", "Jane"),
+])
+def test_create_user(user_service, name, expected):
+    user = user_service.create_user(name)
+    assert user.name == expected
 ```
+
+### 测试覆盖率
+- 使用 pytest-cov 检查覆盖率
+- 目标覆盖率 80%+
 
 ---
 
 ## 工具使用
 
-### 内置工具
+### 格式化工具
 | 工具 | 用途 | 命令 |
 |------|------|------|
-| `go fmt` | 格式化代码 | `go fmt ./...` |
-| `go vet` | 静态检查 | `go vet ./...` |
-| `go test` | 运行测试 | `go test ./...` |
-| `go mod tidy` | 整理依赖 | `go mod tidy` |
+| `black` | 代码格式化 | `black .` |
+| `isort` | 导入排序 | `isort .` |
+| `autopep8` | PEP 8 自动修复 | `autopep8 --in-place .` |
 
-### 推荐工具
-- `staticcheck` - 高级静态分析
-- `golangci-lint` - 集成 lint 工具
-- `gofumpt` - 更严格的格式化
+### Lint 工具
+| 工具 | 用途 | 命令 |
+|------|------|------|
+| `flake8` | 代码风格检查 | `flake8 .` |
+| `pylint` | 代码质量检查 | `pylint .` |
+| `mypy` | 类型检查 | `mypy .` |
+
+### 测试工具
+| 工具 | 用途 | 命令 |
+|------|------|------|
+| `pytest` | 测试框架 | `pytest` |
+| `pytest-cov` | 覆盖率检查 | `pytest --cov=src` |
 
 ### 建议配置
-```yaml
-# .golangci.yml 示例
-linters:
-  enable:
-    - gofmt
-    - govet
-    - staticcheck
-    - gosimple
-    - ineffassign
-    - unused
+
+```toml
+# pyproject.toml 示例
+[tool.black]
+line-length = 88
+target-version = ['py39']
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
 ```
 
 ---
@@ -644,20 +657,44 @@ linters:
 ### 输入验证
 - 始终验证外部输入
 - 使用白名单而非黑名单
+- 使用 pydantic 进行数据验证
+
+```python
+from pydantic import BaseModel, EmailStr, Field
+
+class UserCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    email: EmailStr
+    age: int = Field(..., ge=0, le=150)
+```
 
 ### SQL 注入防护
-- 使用参数化查询
+- 使用 ORM 或参数化查询
 - 避免字符串拼接 SQL
 
-```go
-// 正确
-rows, err := db.Query("SELECT * FROM users WHERE id = ?", userID)
+```python
+# 正确 - 使用 ORM
+user = session.query(User).filter(User.id == user_id).first()
 
-// 错误
-query := fmt.Sprintf("SELECT * FROM users WHERE id = %d", userID)
-rows, err := db.Query(query)
+# 正确 - 参数化查询
+cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+
+# 错误
+query = f"SELECT * FROM users WHERE id = {user_id}"
+cursor.execute(query)
 ```
 
 ### 敏感信息
 - 不在代码中硬编码密钥
 - 使用环境变量或配置管理
+- 使用 python-dotenv 管理环境变量
+
+```python
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+API_KEY = os.getenv("API_KEY")
+DATABASE_URL = os.getenv("DATABASE_URL")
+```
