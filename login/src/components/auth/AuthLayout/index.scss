@@ -1,0 +1,110 @@
+@import '../../../styles/variables';
+@import '../../../styles/mixins';
+
+.auth-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: $bg-color;
+
+  &-header {
+    position: absolute;
+    top: $spacing-md;
+    right: $spacing-md;
+    z-index: 10;
+  }
+
+  &-main {
+    display: flex;
+    flex: 1;
+    height: 100vh;
+
+    @include mobile {
+      flex-direction: column;
+    }
+  }
+
+  &-left {
+    position: relative;
+    width: $left-panel-width-desktop;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+    @include tablet {
+      width: $left-panel-width-tablet;
+    }
+
+    @include mobile {
+      display: none;
+    }
+
+    &-content {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-size: cover;
+      background-position: center;
+    }
+  }
+
+  &-brand {
+    text-align: center;
+    color: white;
+    animation: fadeIn 0.5s ease;
+  }
+
+  &-logo {
+    margin-bottom: $spacing-lg;
+
+    svg {
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+    }
+  }
+
+  &-title {
+    font-size: $font-size-h1;
+    font-weight: $font-weight-bold;
+    margin-bottom: $spacing-sm;
+    letter-spacing: 2px;
+  }
+
+  &-description {
+    font-size: $font-size-body;
+    opacity: 0.8;
+    letter-spacing: 1px;
+  }
+
+  &-right {
+    position: relative;
+    width: $right-panel-width-desktop;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: $spacing-xxl;
+    overflow-y: auto;
+
+    @include tablet {
+      width: $right-panel-width-tablet;
+    }
+
+    @include mobile {
+      width: 100%;
+      padding: $spacing-lg;
+      align-items: flex-start;
+      padding-top: 80px;
+    }
+  }
+
+  // 确保header在right内部正确定位
+  .auth-layout-header {
+    position: fixed;
+    top: $spacing-md;
+    right: $spacing-md;
+    z-index: 10;
+  }
+}

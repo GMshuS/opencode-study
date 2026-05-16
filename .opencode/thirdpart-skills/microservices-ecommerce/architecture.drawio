@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="drawio" version="26.0.0">
+  <diagram name="Microservices E-Commerce Architecture">
+    <mxGraphModel>
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        
+        <!-- Client Tier -->
+        <mxCell id="client_tier" value="Client Tier" style="swimlane;startSize=30;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="100" y="40" width="1200" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="web_app" value="Web Application" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="client_tier">
+          <mxGeometry x="50" y="40" width="160" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="mobile_app" value="Mobile App" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="client_tier">
+          <mxGeometry x="250" y="40" width="160" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="admin_panel" value="Admin Panel" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="client_tier">
+          <mxGeometry x="450" y="40" width="160" height="50" as="geometry"/>
+        </mxCell>
+        
+        <!-- API Gateway Tier -->
+        <mxCell id="gateway_tier" value="API Gateway Tier" style="swimlane;startSize=30;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="100" y="180" width="1200" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="api_gateway" value="API Gateway&#xa;(Kong / Spring Cloud Gateway)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="gateway_tier">
+          <mxGeometry x="400" y="40" width="300" height="50" as="geometry"/>
+        </mxCell>
+        
+        <!-- Service Tier -->
+        <mxCell id="service_tier" value="Microservices Tier" style="swimlane;startSize=30;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="100" y="320" width="1200" height="400" as="geometry"/>
+        </mxCell>
+        
+        <!-- Auth Service -->
+        <mxCell id="auth_service" value="Auth Service" style="swimlane;startSize=30;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="service_tier">
+          <mxGeometry x="50" y="40" width="200" height="320" as="geometry"/>
+        </mxCell>
+        <mxCell id="auth_api" value="REST API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="auth_service">
+          <mxGeometry x="20" y="40" width="160" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="auth_jwt" value="JWT Manager" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="auth_service">
+          <mxGeometry x="20" y="90" width="160" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="auth_db" value="Auth DB&#xa;(PostgreSQL)" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="auth_service">
+          <mxGeometry x="20" y="150" width="160" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="auth_cache" value="Redis Cache" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="auth_service">
+          <mxGeometry x="20" y="250" width="160" height="40" as="geometry"/>
+        </mxCell>
+        
+        <!-- User Service -->
+        <mxCell id="user_service" value="User Service" style="swimlane;startSize=30;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="service_tier">
+          <mxGeometry x="290" y="40" width="200" height="320" as="geometry"/>
+        </mxCell>
+        <mxCell id="user_api" value="REST API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="user_service">
+          <mxGeometry x="20" y="40" width="160" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="user_profile" value="Profile Manager" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="user_service">
+          <mxGeometry x="20" y="90" width="160" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="user_db" value="User DB&#xa;(PostgreSQL)" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="user_service">
+          <mxGeometry x="20" y="150" width="160" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="user_cache" value="Redis Cache" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="user_service">
+          <mxGeometry x="20" y="250" width="160" height="40" as="geometry"/>
+        </mxCell>
+        
+        <!-- Product Service -->
+        <mxCell id="product_service" value="Product Service" style="swimlane;startSize=30;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="service_tier">
+          <mxGeometry x="530" y="40" width="200" height="320" as="geometry"/>
+        </mxCell>
+        <mxCell id="product_api" value="REST API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="product_service">
+          <mxGeometry x="20" y="40" width="160" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="product_catalog" value="Catalog Manager" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="product_service">
+          <mxGeometry x="20" y="90" width="160" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="product_db" value="Product DB&#xa;(MongoDB)" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="product_service">
+          <mxGeometry x="20" y="150" width="160" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="product_cache" value="Redis Cache" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="product_service">
+          <mxGeometry x="20" y="250" width="160" height="40" as="geometry"/>
+        </mxCell>
+        
+        <!-- Order Service -->
+        <mxCell id="order_service" value="Order Service" style="swimlane;startSize=30;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="service_tier">
+          <mxGeometry x="770" y="40" width="200" height="320" as="geometry"/>
+        </mxCell>
+        <mxCell id="order_api" value="REST API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="order_service">
+          <mxGeometry x="20" y="40" width="160" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="order_manager" value="Order Manager" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="order_service">
+          <mxGeometry x="20" y="90" width="160" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="order_db" value="Order DB&#xa;(PostgreSQL)" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="order_service">
+          <mxGeometry x="20" y="150" width="160" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="order_cache" value="Redis Cache" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="order_service">
+          <mxGeometry x="20" y="250" width="160" height="40" as="geometry"/>
+        </mxCell>
+        
+        <!-- Payment Service -->
+        <mxCell id="payment_service" value="Payment Service" style="swimlane;startSize=30;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="service_tier">
+          <mxCell id="payment_api" value="REST API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="payment_service">
+            <mxGeometry x="20" y="40" width="160" height="40" as="geometry"/>
+          </mxCell>
+          <mxGeometry x="1010" y="40" width="200" height="320" as="geometry"/>
+        </mxCell>
+        <mxCell id="payment_processor" value="Payment Processor" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="payment_service">
+          <mxGeometry x="20" y="90" width="160" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="payment_db" value="Payment DB&#xa;(PostgreSQL)" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="payment_service">
+          <mxGeometry x="20" y="150" width="160" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="payment_external" value="Stripe/PayPal" style="rounded=1;dashed=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="payment_service">
+          <mxGeometry x="20" y="250" width="160" height="40" as="geometry"/>
+        </mxCell>
+        
+        <!-- Message Queue Tier -->
+        <mxCell id="mq_tier" value="Message Queue Tier" style="swimlane;startSize=30;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="100" y="760" width="1200" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="kafka" value="Apache Kafka&#xa;(Message Broker)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="mq_tier">
+          <mxGeometry x="400" y="40" width="300" height="60" as="geometry"/>
+        </mxCell>
+        
+        <!-- Notification Service -->
+        <mxCell id="notification_service" value="Notification Service" style="swimlane;startSize=30;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="100" y="920" width="1200" height="140" as="geometry"/>
+        </mxCell>
+        <mxCell id="notif_consumer" value="Kafka Consumer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="notification_service">
+          <mxGeometry x="50" y="40" width="160" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="email_service" value="Email Service" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="notification_service">
+          <mxGeometry x="250" y="40" width="160" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="sms_service" value="SMS Service" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="notification_service">
+          <mxGeometry x="450" y="40" width="160" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="push_service" value="Push Notification" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="notification_service">
+          <mxGeometry x="650" y="40" width="160" height="50" as="geometry"/>
+        </mxCell>
+        
+        <!-- Edges: Client to Gateway -->
+        <mxCell id="edge1" value="HTTPS/REST" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="web_app" target="api_gateway">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2" value="HTTPS/REST" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.3;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="mobile_app" target="api_gateway">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3" value="HTTPS/REST" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.7;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="admin_panel" target="api_gateway">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Edges: Gateway to Services -->
+        <mxCell id="edge4" value="Route" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.1;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="api_gateway" target="auth_service">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge5" value="Route" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.25;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="api_gateway" target="user_service">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge6" value="Route" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="api_gateway" target="product_service">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge7" value="Route" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.75;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="api_gateway" target="order_service">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge8" value="Route" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.9;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="api_gateway" target="payment_service">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Edges: Services to Kafka -->
+        <mxCell id="edge9" value="Publish Events" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.2;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="auth_service" target="kafka">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge10" value="Publish Events" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.35;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="order_service" target="kafka">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge11" value="Publish Events" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="payment_service" target="kafka">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge12" value="Publish Events" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.65;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="product_service" target="kafka">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Edge: Kafka to Notification -->
+        <mxCell id="edge13" value="Consume Events" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="kafka" target="notif_consumer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Service-to-Service Communication -->
+        <mxCell id="edge14" value="gRPC/REST&#xa;Validate User" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;dashed=1;" edge="1" parent="1" source="auth_service" target="user_service">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge15" value="gRPC/REST&#xa;Check Inventory" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;dashed=1;" edge="1" parent="1" source="order_service" target="product_service">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge16" value="gRPC/REST&#xa;Process Payment" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;dashed=1;" edge="1" parent="1" source="order_service" target="payment_service">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,60 @@
+@import '../../../styles/variables';
+
+.phone-input {
+  display: flex !important;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: stretch;
+
+  .phone-input-area-code {
+    width: 130px;
+    min-width: 130px;
+    flex-shrink: 0;
+
+    .ant-select-selector {
+      border-radius: $border-radius 0 0 $border-radius !important;
+    }
+
+    // 确保已选中文本完整显示
+    .ant-select-selection-item,
+    .ant-select-selection-placeholder {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  // 下拉菜单选项文本完整显示
+  .ant-select-dropdown {
+    .ant-select-item {
+      white-space: nowrap;
+
+      .ant-select-item-option-content {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+  }
+
+  .phone-input-number {
+    flex: 1;
+    border-radius: 0 $border-radius $border-radius 0 !important;
+
+    &:focus {
+      border-color: $primary-color;
+      box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.1);
+    }
+  }
+
+  .ant-input {
+    height: $input-height;
+  }
+
+  .ant-select-focused & {
+    .ant-select-selector {
+      border-color: $primary-color !important;
+      box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.1) !important;
+    }
+  }
+}

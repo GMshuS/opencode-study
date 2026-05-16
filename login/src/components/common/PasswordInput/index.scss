@@ -1,0 +1,32 @@
+@import '../../../styles/variables';
+
+.password-input {
+  .ant-input {
+    height: $input-height;
+    border-radius: $border-radius;
+
+    &:focus {
+      border-color: $primary-color;
+      box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.1);
+    }
+  }
+
+  .ant-input-affix-wrapper {
+    border-radius: $border-radius;
+
+    &:focus,
+    &:focus-within {
+      border-color: $primary-color;
+      box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.1);
+    }
+  }
+
+  .ant-input-password-icon {
+    color: $text-secondary;
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: $text-primary;
+    }
+  }
+}

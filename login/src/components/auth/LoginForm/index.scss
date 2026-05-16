@@ -1,0 +1,69 @@
+@import '../../../styles/variables';
+@import '../../../styles/mixins';
+
+.login-form {
+  width: 100%;
+  max-width: 400px;
+  animation: slideInRight 0.4s ease;
+
+  &-header {
+    text-align: center;
+    margin-bottom: $spacing-xl;
+  }
+
+  &-title {
+    font-size: $font-size-h1;
+    font-weight: $font-weight-bold;
+    color: $text-primary;
+    margin-bottom: $spacing-sm;
+  }
+
+  &-subtitle {
+    font-size: $font-size-body;
+    color: $text-secondary;
+  }
+
+  &-tabs {
+    margin-bottom: $spacing-lg;
+
+    .ant-tabs-nav {
+      margin-bottom: $spacing-md;
+    }
+
+    .ant-tabs-tab {
+      padding: $spacing-sm 0;
+      font-size: $font-size-body;
+      transition: all 0.2s ease;
+
+      &:hover {
+        color: $primary-color;
+      }
+    }
+
+    .ant-tabs-tab-active .ant-tabs-tab-btn {
+      color: $primary-color;
+    }
+
+    .ant-tabs-ink-bar {
+      background: $primary-color;
+    }
+  }
+
+  &-footer {
+    margin-top: $spacing-lg;
+    text-align: center;
+    font-size: $font-size-body;
+    color: $text-secondary;
+
+    a {
+      margin-left: $spacing-xs;
+      color: $primary-color;
+      cursor: pointer;
+      transition: color 0.2s ease;
+
+      &:hover {
+        color: $primary-hover;
+      }
+    }
+  }
+}
