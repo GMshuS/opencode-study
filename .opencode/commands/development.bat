@@ -5,9 +5,12 @@ setlocal enabledelayedexpansion
 set "TARGET_DIR1=%USERPROFILE%\.config\opencode\commands"
 set "TARGET_DIR2=%USERPROFILE%\.roo\commands"
 set "TARGET_DIR3=%USERPROFILE%\.trae-cn\commands"
+set "TARGET_DIR4=%USERPROFILE%\.codebuddy\commands"
+set "TARGET_DIR5=%USERPROFILE%\.claude\commands"
+
 
 :: Create directories and copy folders
-for %%D in ("%TARGET_DIR1%" "%TARGET_DIR2%" "%TARGET_DIR3%") do (
+for %%D in ("%TARGET_DIR1%" "%TARGET_DIR2%" "%TARGET_DIR3%" "%TARGET_DIR4%" "%TARGET_DIR5%") do (
     set "DEST=%%~D"
     if not exist "!DEST!" (
         echo Creating directory: !DEST!
