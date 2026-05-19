@@ -79,11 +79,11 @@ constexpr double PI = 3.14159;
 - 枚举值：PascalCase 或全大写 + 下划线
 
 ```cpp
-enum TRADESTRATEGY_ERROR
+enum TRADESTRATEGYERROR
 {
-    TRADESTRATEGYERR_BEGIN = 1010000,
-    TRADESTRATEGYERR_LOGIN,
-    TRADESTRATEGYERR_END
+    TRADESTRATEGYERROR_BEGIN = 1010000,
+    TRADESTRATEGYERROR_LOGIN,
+    TRADESTRATEGYERROR_END
 };
 ```
 
@@ -123,6 +123,22 @@ strUrl = CConfigCenter::GetInstance()->GetHttpAddr();
 strUrl += "?TENANT_ID=" + CConfigCenter::GetInstance()->GetTenantID(); 
 strUrl += "&TOKEN=" + CConfigCenter::GetInstance()->GetToken();  
 strUrl += "&SERVICE=" + strService;
+```
+
+### `{`与`}`单独成行
+- 函数、类、条件语句等的`{`与`}`应单独成行
+
+```cpp
+// 错误
+if (condition) {
+    // 代码块
+}
+
+// 正确
+if (condition)
+{
+    // 代码块
+}
 ```
 
 ---
@@ -220,7 +236,8 @@ delete ptr;
 
 ### RAII 原则
 ```cpp
-class FileHandler {
+class FileHandler
+{
 public:
     FileHandler(const std::string& path) : file_(std::fopen(path.c_str(), "r")) {}
     ~FileHandler() { if (file_) std::fclose(file_); }
@@ -234,7 +251,8 @@ private:
 ```c
 // 分配后立即检查
 void* ptr = malloc(size);
-if (ptr == NULL) {
+if (ptr == NULL)
+{
     // 错误处理
     return;
 }
@@ -262,36 +280,24 @@ void process() noexcept;  // 不抛出异常
 ```c
 // 返回错误码
 int result = function();
-if (result != 0) {
+if (result != 0)
+{
     // 错误处理
 }
 
 // 或使用 errno
 #include <errno.h>
-if (errno != 0) {
+if (errno != 0)
+{
     perror("Error");
 }
 ```
 
 ---
 
-## 注释和文档
+## 代码注释
 
-### 函数注释
-```cpp
-/**
- * @brief 计算两个整数的和
- * @param a 第一个整数
- * @param b 第二个整数
- * @return 两数之和
- * @note 注意整数溢出
- */
-int add(int a, int b);
-```
-
-### 代码注释
-
-#### 文件头注释
+### 文件头注释
 每个源文件开头应包含简要说明（当前项目中较少，建议添加）
 
 ```cpp
@@ -303,7 +309,7 @@ int add(int a, int b);
  */
 ```
 
-#### 类注释
+### 类注释
 类定义前应有功能说明
 
 ```cpp
@@ -314,7 +320,7 @@ class CConfigCenter
 };
 ```
 
-#### 函数注释
+### 函数注释
 复杂函数应说明功能、参数和返回值
 
 ```cpp
@@ -329,7 +335,7 @@ bool ParseReqParam(string& strUrl, string& strReqJson,
                    const CDispatchUser& userObj);
 ```
 
-#### 行内注释
+### 行内注释
 - 使用 `//` 进行单行注释
 - 注释前留一个空格
 - 解释"为什么"而不是"是什么"
@@ -342,7 +348,7 @@ if (atoi(szSubMode) != -1)  // -1 表示禁用模式
 }
 ```
 
-#### TODO/FIXME 注释
+### TODO/FIXME 注释
 使用标准标记标注待办事项
 
 ```cpp
