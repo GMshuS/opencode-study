@@ -1,6 +1,6 @@
 ---
 name: go-coding-standards
-description: 当进行 Go 代码生成或者要求审查 Go 代码时调用。
+description: 当进行 Go 代码生成或者要求审查 Go 代码时必须调用。
 ---
 
 # 核心规范摘要

@@ -1,6 +1,6 @@
 ---
 name: javascript-coding-standards
-description: 当进行 JavaScript 代码生成或者要求审查 JavaScript 代码时调用。
+description: 当进行 JavaScript/TypeScript 代码生成或者要求审查 JavaScript/TypeScript 代码时必须必须调用。
 ---
 
 # 核心规范摘要

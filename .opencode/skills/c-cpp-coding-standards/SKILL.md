@@ -1,6 +1,6 @@
 ---
 name: c-cpp-coding-standards
-description: 当进行 C/C++ 代码生成或者要求审查 C/C++ 代码时调用。
+description: 当进行 C/C++ 代码生成或者要求审查 C/C++ 代码时必须调用。
 ---
 
 # 核心规范摘要
