@@ -5,7 +5,7 @@ name: dev-review
 temperature: 0.0
 tools:
   read: true
-  write: true
+  write: false
   edit: false
   bash: false
 permission:
@@ -28,4 +28,4 @@ permission:
 4. 优化建议：
 - 建议1
 5. 下一步建议：
-如需修复请调用 @bugfix，无需修改可进入测试环节
+如需修复请调用 @dev-bugfix，无需修改可进入测试环节

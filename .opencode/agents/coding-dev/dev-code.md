@@ -7,7 +7,7 @@ tools:
   read: true
   write: true
   edit: true
-  bash: false
+  bash: true
   webfetch: true
 permission:
   write: allow
@@ -34,4 +34,4 @@ permission:
 5. 待补充内容：
 - 无 / 待实现内容
 6. 下一步建议：
-请调用 @review 对代码进行质量审查
+请调用 @dev-review 对代码进行质量审查

@@ -5,7 +5,7 @@ name: dev-plan
 temperature: 0.0
 tools:
   read: true
-  write: true
+  write: false
   edit: false
   bash: false
   webfetch: true
@@ -37,4 +37,4 @@ permission:
 6. 验收标准：
 - 可量化验收条件
 7. 下一步建议：
-请调用 @code 按照计划编写代码
+请调用 @dev-code 按照计划编写代码

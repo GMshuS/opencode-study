@@ -5,7 +5,7 @@ name: dev-test
 temperature: 0.0
 tools:
   read: true
-  write: true
+  write: false
   edit: false
   bash: true
 permission:
@@ -29,9 +29,10 @@ permission:
 2. 执行命令：
 - 命令1
 - 命令2
-3. 测试结果：
-- 编译结果/单元测试结果
-4. 失败日志/异常信息：
-- 无 / 具体报错
+3. 问题清单：
+- 问题1
+- 问题2
+4. 涉及文件路径：
+- 文件1
 5. 下一步建议：
-测试通过可交付成果，失败请调用 @bugfix 修复
+测试通过可交付成果，失败请调用 @dev-bugfix 修复

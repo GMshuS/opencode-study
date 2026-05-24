@@ -6,5 +6,19 @@
     "如果验证失败，分析错误并修复，直到验证通过。",
     "验证成功后再告知用户任务完成。",
     "不要假设代码能正常工作，必须实际运行验证。"
-  ]
+  ],
+  "plugin": [
+    "opencode-event-shell-exec",
+    "opencode-command-hooks",
+    "MyPlugin.js",
+    "hello.js"
+  ],
+  "experimental": {
+    "batch_tool": true,
+    "openTelemetry": false,
+    "disable_paste_summary": false,
+    "continue_loop_on_deny": true,
+    "primary_tools": [],
+    "mcp_timeout": 5000
+  }
 }

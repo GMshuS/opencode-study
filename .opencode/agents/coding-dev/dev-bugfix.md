@@ -7,7 +7,7 @@ tools:
   read: true
   write: true
   edit: true
-  bash: false
+  bash: true
 permission:
   edit: allow
 ---
@@ -30,4 +30,4 @@ permission:
 5. 修复验证结果：
 - 验证方式/验证结果
 6. 下一步建议：
-请调用 @review 重新审查，或调用 @test 重新测试
+请调用 @dev-review 重新审查，或调用 @dev-test 重新测试
