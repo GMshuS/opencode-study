@@ -48,7 +48,7 @@ public:
 
 ### 类命名
 - 使用 **PascalCase**（大驼峰命名法）
-- 类名前可加 `C` 前缀表示 Class（可选但需保持一致）
+- 类名前必须加 `C` 前缀表示 Class
 
 ```cpp
 class CConfigCenter
