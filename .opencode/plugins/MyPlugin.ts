@@ -6,8 +6,10 @@ function fileLog(msg: string) {
   writeFileSync('./opencode-events.log', line, { flag: 'a' })
 }
 
-export default (async ( ctx ) => {
+export const MyPlugin = (async ( ctx ) => {
   const { project, directory } = ctx
+
+  console.log(`✅ [INIT] Plugin loaded for project ${project.id} at ${directory}`);
 
   fileLog(`[INIT] Plugin loaded for project ${project.id} at ${directory}`)
 
@@ -82,19 +84,21 @@ export default (async ( ctx ) => {
     // ═══════════════════════════════════════════════════════════════════════
     event: async ({ event }) => {
 
-      fileLog(`[event] type=${event.type}`)
+      // fileLog(`[event] type=${event.type}`)
+      // 打印所有系统事件，用于调试
+      // console.log(`[event] ${event.type}`, event.properties);
 
       // 所有数据都在 event.properties 中，event.data 不存在
       const properties = event.properties as any
 
-      switch (event.type) {
+      switch (event.type as string) {
 
         // ═══════════════════════════════════════════
         // 命令事件
         // ═══════════════════════════════════════════
         case 'command.executed': {
           // command.executed 事件包含 name/arguments/sessionID/messageID，记录执行的命令和参数以便分析用户操作和系统响应
-          fileLog(`[command.executed] /${properties.name} ${properties.arguments || ''} (session=${properties.sessionID})`)
+          fileLog(`[command.executed] name=${properties.name} arguments=${properties.arguments || ''} session=${properties.sessionID} message=${properties.messageID || ''}`)
           break
         }
 
@@ -103,12 +107,12 @@ export default (async ( ctx ) => {
         // ═══════════════════════════════════════════
         case 'file.edited': {
           // file.edited 事件包含 file/event/sessionID，记录文件编辑信息以便分析文件交互过程
-          fileLog(`[file.edited] Edited: ${properties.file} (${properties.event}) in session ${properties.sessionID}`)
+          fileLog(`[file.edited] file=${properties.file} event=${properties.event} session=${properties.sessionID}`)
           break
         }
         case 'file.watcher.updated': {
           // file.watcher.updated 事件包含 file/event/sessionID，记录文件变更信息以便分析文件交互过程
-          fileLog(`[file.watcher.updated] ${properties.event} on ${properties.file} in session ${properties.sessionID}`)
+          fileLog(`[file.watcher.updated] event=${properties.event} file=${properties.file} session=${properties.sessionID}`)
           break
         }
 
@@ -117,7 +121,7 @@ export default (async ( ctx ) => {
         // ═══════════════════════════════════════════
         case 'installation.updated': {
           // installation.updated 事件包含 version 字段，记录更新后的版本信息以便分析安装和更新过程
-          fileLog(`[installation.updated] Updated to ${properties.version} in session ${properties.sessionID}`)
+          fileLog(`[installation.updated] version=${properties.version} session=${properties.sessionID} instance=${properties.instanceID}`)
           break
         }
 
@@ -126,12 +130,12 @@ export default (async ( ctx ) => {
         // ═══════════════════════════════════════════
         case 'lsp.client.diagnostics': {
           // lsp.client.diagnostics 事件包含 serverID/path/sessionID，记录诊断信息以便分析 LSP 交互过程和诊断结果
-          fileLog(`[lsp.client.diagnostics] Diagnostics from ${properties.serverID} for ${properties.path} in session ${properties.sessionID}`)
+          fileLog(`[lsp.client.diagnostics] serverID=${properties.serverID} path=${properties.path} session=${properties.sessionID} diagnostics=${JSON.stringify(properties.diagnostics)}`)
           break
         }
         case 'lsp.updated': {
           // lsp.updated 事件包含 sessionID 和一个动态属性对象，记录更新的服务器信息和相关属性以便分析 LSP 交互过程
-          fileLog(`[lsp.updated] Updated in session ${properties.sessionID} with properties ${JSON.stringify(properties)}`)
+          fileLog(`[lsp.updated] version=${properties.version} session=${properties.sessionID} instance=${properties.instanceID} serverID=${properties.serverID} capabilities=${JSON.stringify(properties.capabilities)} metadata=${JSON.stringify(properties.metadata)}`)
           break
         }
 
@@ -149,16 +153,16 @@ export default (async ( ctx ) => {
           // 没有 content 字段，只有 role/id/time 等元数据
           if (msg.role === 'user') {
             // user 消息的更新事件是我们之前没有预料到的，记录相关信息以便分析和优化消息更新流程
-            fileLog(`[message.updated] User ${msg.id} agent=${msg.agent} model=${msg.model?.providerID}/${msg.model?.modelID} in session ${properties.sessionID} summary=${msg.summary ? 'yes' : 'no'}`)
+            fileLog(`[message.updated] id=${msg.id} agent=${msg.agent} model=${msg.model?.providerID}/${msg.model?.modelID} in session ${properties.sessionID} summary=${msg.summary ? 'yes' : 'no'} tokens=${msg.tokens?.input || 0}/${msg.tokens?.output || 0} error=${msg.error ? `${msg.error.name}: ${JSON.stringify(msg.error.data)}` : 'no'} finish=${msg.finish || 'no'}`)
           } else {
             // assistant 消息的更新事件是我们之前没有预料到的，记录相关信息以便分析和优化消息更新流程
-            fileLog(`[message.updated] Assistant ${msg.id} model=${msg.modelID} tokens=${msg.tokens?.input || 0}/${msg.tokens?.output || 0} in session ${properties.sessionID} error=${msg.error ? `${msg.error.name}: ${JSON.stringify(msg.error.data)}` : 'no'} finish=${msg.finish || 'no'}`)
+            fileLog(`[message.updated] Assistant id=${msg.id} model=${msg.modelID} tokens=${msg.tokens?.input || 0}/${msg.tokens?.output || 0} in session ${properties.sessionID} error=${msg.error ? `${msg.error.name}: ${JSON.stringify(msg.error.data)}` : 'no'} finish=${msg.finish || 'no'} summary=${msg.summary ? 'yes' : 'no'} parts=${msg.parts?.length || 0}`)
           }
           break
         }
         case 'message.removed': {
           // message.removed 事件包含 sessionID 和 messageID，记录被删除的消息信息以便分析消息更新过程
-          fileLog(`[message.removed] Removed ${properties.messageID} from ${properties.sessionID}`)
+          fileLog(`[message.removed] messageID=${properties.messageID} from sessionID=${properties.sessionID}`)
           break
         }
         case 'message.part.updated': {
@@ -173,57 +177,57 @@ export default (async ( ctx ) => {
           switch (part.type) {
             case 'text':
               // text 类型的部分更新事件是我们之前没有预料到的，记录相关信息以便分析和优化消息更新流程
-              fileLog(`[message.part.updated] text id=${part.id} msg=${part.messageID} len=${part.text?.length || 0} delta=${delta ? 'yes' : 'no'}`)
+              fileLog(`[message.part.updated] text id=${part.id} messageID=${part.messageID} text=${part.text|| ''} delta=${delta ? 'yes' : 'no'} session=${properties.sessionID}`)
               break
             case 'tool':
               // tool 类型的部分更新事件是我们之前没有预料到的，记录相关信息以便分析和优化消息更新流程
-              fileLog(`[message.part.updated] tool id=${part.id} tool=${part.tool} status=${part.state?.status} delta=${delta ? 'yes' : 'no'}`)
+              fileLog(`[message.part.updated] tool id=${part.id} tool=${part.tool} status=${part.state?.status} delta=${delta ? 'yes' : 'no'} session=${properties.sessionID} message=${part.messageID}`)
               break
             case 'reasoning':
               // reasoning 类型的部分更新事件是我们之前没有预料到的，记录相关信息以便分析和优化消息更新流程
-              fileLog(`[message.part.updated] reasoning id=${part.id} len=${part.text?.length || 0} delta=${delta ? 'yes' : 'no'}`)
+              fileLog(`[message.part.updated] reasoning id=${part.id} len=${part.text?.length || 0} delta=${delta ? 'yes' : 'no'} session=${properties.sessionID} message=${part.messageID}`)
               break
             case 'file':
               // file 类型的部分更新事件是我们之前没有预料到的，记录相关信息以便分析和优化消息更新流程
-              fileLog(`[message.part.updated] file id=${part.id} mime=${part.mime} name=${part.filename || 'unknown'} delta=${delta ? 'yes' : 'no'}`)
+              fileLog(`[message.part.updated] file id=${part.id} mime=${part.mime} name=${part.filename || 'unknown'} delta=${delta ? 'yes' : 'no'} session=${properties.sessionID} message=${part.messageID}`)
               break
             case 'step-start':
               // step-start 类型的部分更新事件是我们之前没有预料到的，记录相关信息以便分析和优化消息更新流程
-              fileLog(`[message.part.updated] step-start id=${part.id} delta=${delta ? 'yes' : 'no'}`)
+              fileLog(`[message.part.updated] step-start id=${part.id} delta=${delta ? 'yes' : 'no'} session=${properties.sessionID} message=${part.messageID} reason=${part.reason || ''} agent=${part.agent || ''} model=${part.model || ''}`)
               break
             case 'step-finish':
               // step-finish 类型的部分更新事件是我们之前没有预料到的，记录相关信息以便分析和优化消息更新流程
-              fileLog(`[message.part.updated] step-finish id=${part.id} reason=${part.reason} cost=$${part.cost} delta=${delta ? 'yes' : 'no'}`)
+              fileLog(`[message.part.updated] step-finish id=${part.id} reason=${part.reason} cost=$${part.cost} delta=${delta ? 'yes' : 'no'} session=${properties.sessionID} message=${part.messageID}`)
               break
             case 'snapshot':
               // snapshot 类型的部分更新事件是我们之前没有预料到的，记录相关信息以便分析和优化消息更新流程
-              fileLog(`[message.part.updated] snapshot id=${part.id} delta=${delta ? 'yes' : 'no'}`)
+              fileLog(`[message.part.updated] snapshot id=${part.id} delta=${delta ? 'yes' : 'no'} session=${properties.sessionID} message=${part.messageID}  reason=${part.reason || ''} agent=${part.agent || ''} model=${part.model || ''}`)
               break
             case 'patch':
               // patch 类型的部分更新事件是我们之前没有预料到的，记录相关信息以便分析和优化消息更新流程
-              fileLog(`[message.part.updated] patch id=${part.id} files=${part.files?.length || 0} delta=${delta ? 'yes' : 'no'}`)
+              fileLog(`[message.part.updated] patch id=${part.id} files=${part.files?.length || 0} delta=${delta ? 'yes' : 'no'} session=${properties.sessionID} message=${part.messageID} reason=${part.reason || ''} agent=${part.agent || ''} model=${part.model || ''}`)
               break
             case 'agent':
               // AgentPart 的 source 字段可能包含敏感信息，记录时需要注意脱敏处理
-              fileLog(`[message.part.updated] agent id=${part.id} name=${part.name} delta=${delta ? 'yes' : 'no'}`)
+              fileLog(`[message.part.updated] agent id=${part.id} name=${part.name} delta=${delta ? 'yes' : 'no'} session=${properties.sessionID} message=${part.messageID} reason=${part.reason || ''} agent=${part.agent || ''} model=${part.model || ''} source=${part.source ? '[source]' : 'no source'}`)
               break
             case 'retry':
               // retry 类型的部分更新事件是我们之前没有预料到的，记录相关信息以便分析和优化消息更新流程
-              fileLog(`[message.part.updated] retry id=${part.id} attempt=${part.attempt} delta=${delta ? 'yes' : 'no'}`)
+              fileLog(`[message.part.updated] retry id=${part.id} attempt=${part.attempt} delta=${delta ? 'yes' : 'no'} session=${properties.sessionID} message=${part.messageID} reason=${part.reason || ''} agent=${part.agent || ''} model=${part.model || ''} error=${part.error ? `${part.error.name}: ${JSON.stringify(part.error.data)}` : 'no'}`)
               break
             case 'compaction':
               // compaction 类型的部分更新事件是我们之前没有预料到的，记录相关信息以便分析和优化消息更新流程
-              fileLog(`[message.part.updated] compaction id=${part.id} auto=${part.auto} delta=${delta ? 'yes' : 'no'}`)
+              fileLog(`[message.part.updated] compaction id=${part.id} auto=${part.auto} delta=${delta ? 'yes' : 'no'} session=${properties.sessionID} message=${part.messageID} reason=${part.reason || ''} agent=${part.agent || ''} model=${part.model || ''}`)
               break
             default:
               // 兜底，记录未知类型的部分更新事件以便分析和修正
-              fileLog(`[message.part.updated] unknown type=${part.type} id=${part.id} delta=${delta ? 'yes' : 'no'}  session=${properties.sessionID} message=${part.messageID}`)
+              fileLog(`[message.part.updated] unknown type=${part.type}`)
           }
           break
         }
         case 'message.part.removed': {
           // message.part.removed 事件包含 sessionID/messageID/partID，记录被删除的部分信息以便分析消息更新过程
-          fileLog(`[message.part.removed] Removed part ${properties.partID} from msg ${properties.messageID} in session ${properties.sessionID}`)
+          fileLog(`[message.part.removed] Removed part=${properties.partID} from msg=${properties.messageID} in session=${properties.sessionID} reason=${properties.reason || ''} agent=${properties.agent || ''} model=${properties.model || ''}`)
           break
         }
         case 'message.part.delta': {
@@ -236,11 +240,11 @@ export default (async ( ctx ) => {
         // 权限事件
         // ═══════════════════════════════════════════
         case 'permission.updated': {
-          fileLog(`[permission.updated] Updated ${properties.id} type=${properties.type} session=${properties.sessionID} title="${properties.title}"`)
+          fileLog(`[permission.updated] Updated id=${properties.id} type=${properties.type} session=${properties.sessionID} title="${properties.title}"`)
           break
         }
         case 'permission.replied': {
-          fileLog(`[permission.replied] Replied ${properties.permissionID} → ${properties.response} (session=${properties.sessionID})`)
+          fileLog(`[permission.replied] Replied id=${properties.permissionID} → ${properties.response} (session=${properties.sessionID}) reason=${properties.reason || ''} agent=${properties.agent || ''} model=${properties.model || ''}`)
           break
         }
 
@@ -258,7 +262,7 @@ export default (async ( ctx ) => {
         case 'session.created': {
           const s = properties.info
           // session.created 事件可能没有 info，只有 sessionID，因此需要兼容性处理
-          fileLog(`[session.created] Created: ${s?.id || '?'} at ${s?.directory || '?'} title="${s?.title || ''}" session=${properties.sessionID} version=${s?.version} time=${s ? new Date(s.time.created).toISOString() : '?'} summary=${s?.summary ? 'yes' : 'no'} `)
+          fileLog(`[session.created] Created: id=${s?.id || '?'} directory=${s?.directory || '?'} title="${s?.title || ''}" session=${properties.sessionID} version=${s?.version} time=${s ? new Date(s.time.created).toISOString() : '?'} summary=${s?.summary ? 'yes' : 'no'} instance=${s?.instanceID || '?'} metadata=${s ? JSON.stringify(s.metadata) : '{}'}`)
           break
         }
         case 'session.updated': {
@@ -275,12 +279,12 @@ export default (async ( ctx ) => {
         }
         case 'session.compacted': {
           // session.compacted 事件没有额外信息，只有 sessionID
-          fileLog(`[session.compacted] Compacted: ${properties.sessionID}`)
+          fileLog(`[session.compacted] Compacted: sessionID=${properties.sessionID} reason=${properties.reason || ''} agent=${properties.agent || ''} model=${properties.model || ''}`)
           break
         }
         case 'session.idle': {
           // session.idle 事件没有额外信息，只有 sessionID
-          fileLog(`[session.idle] Idle: ${properties.sessionID}`)
+          fileLog(`[session.idle] Idle: sessionID=${properties.sessionID} reason=${properties.reason || ''} agent=${properties.agent || ''} model=${properties.model || ''}`)
           break
         }
         case 'session.error': {
@@ -290,7 +294,7 @@ export default (async ( ctx ) => {
             errStr = `${err.name}: ${err.data?.message || JSON.stringify(err.data)}`
           }
           // session.error 事件包含 sessionID 和 error 对象，记录错误信息以便排查问题
-          fileLog(`[session.error] Error in ${properties.sessionID || '?'}: ${errStr}`)
+          fileLog(`[session.error] Error in ${properties.sessionID || '?'}: ${errStr} reason=${properties.reason || ''} agent=${properties.agent || ''} model=${properties.model || ''}`)
           break
         }
         case 'session.status': {
@@ -316,7 +320,7 @@ export default (async ( ctx ) => {
           const todos = properties.todos || []
           const done = todos.filter((t: any) => t.status === 'completed').length
           // todo.updated 事件包含 sessionID 和 todos 数组，记录完成情况和待办详情
-          fileLog(`[todo.updated] ${done}/${todos.length} (session=${properties.sessionID}) todos=${JSON.stringify(todos)}`)
+          fileLog(`[todo.updated] ${done}/${todos.length} session=${properties.sessionID} todos=${JSON.stringify(todos)} reason=${properties.reason || ''} agent=${properties.agent || ''} model=${properties.model || ''}`)
           break
         }
 
@@ -330,7 +334,7 @@ export default (async ( ctx ) => {
         }
         case 'tui.command.execute': {
           // tui.command.execute 事件包含 command 字段，记录执行的命令和参数以便分析用户操作和系统响应
-          fileLog(`[tui.command.execute] Command: ${properties.command} in session ${properties.sessionID}`)
+          fileLog(`[tui.command.execute] Command=${properties.command} in session=${properties.sessionID}`)
           break
         }
         case 'tui.toast.show': {
@@ -349,4 +353,4 @@ export default (async ( ctx ) => {
       }
     },
   }
-}) satisfies Plugin
+}) as Plugin
