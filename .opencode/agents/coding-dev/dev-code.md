@@ -44,8 +44,14 @@ permission:
 严格按照计划编写代码：
 
 ## 步骤1：语言探测
-从 dev-plan 提供的上下文（技术方案、文件结构）识别项目语言，
-加载对应编码规范技能以指导代码生成：
+
+### 优先使用 master 传递的上下文
+如果 dev-master 已传递了语言/框架信息和已加载的编码规范名：
+- 直接使用，不重复探测
+- 仅加载 master 指定的 `@xxx-coding-standards` 技能
+
+### 回退自动探测
+仅在 master 未传递上下文时执行语言自检测：
 - `package.json` / `tsconfig.json` / `*.js` / `*.ts` / `*.tsx` → **JavaScript/TypeScript** → 加载 `@javascript-coding-standards`
 - `setup.py` / `pyproject.toml` / `requirements.txt` / `*.py` → **Python** → 加载 `@python-coding-standards`
 - `go.mod` / `*.go` → **Go** → 加载 `@go-coding-standards`
@@ -57,6 +63,8 @@ permission:
 3. 按加载的编码规范书写代码
 4. 生成前先 `read` 目标文件及相邻文件，理解现有代码风格
 5. 每完成一个文件，记录完整路径
+
+> 注：本步骤的语法自检仅做快速语法验证，不替代后续 @dev-review 的完整构建和测试。
 
 ## 步骤3：代码自检
 每编写完一个文件/模块后，立即执行语法/编译检查：

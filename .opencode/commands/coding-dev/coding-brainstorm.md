@@ -1,129 +1,184 @@
 ---
-description: Task brainstorming phase - explore requirements, solutions, and tech choices
+description: 深度需求探索与技术方案设计，用于 dev-master 启动之前的预热阶段
 ---
 
-# Bigtask Brainstorm Command
+# Coding Brainstorm Command
 
-## Parameter Validation
+## 参数校验
 
-IF $ARGUMENTS is empty:
-OUTPUT "Error: Missing required arguments."
-OUTPUT "Usage: /bigtask-brainstorm <project-name> <theme>"
-OUTPUT "Example: /bigtask-brainstorm project-a user authentication system"
+IF $ARGUMENTS 为空:
+OUTPUT "Error: 缺少必要参数"
+OUTPUT "用法: /coding-brainstorm <项目名称> <探索主题>"
+OUTPUT "示例: /coding-brainstorm 用户中心 用户认证与权限管理系统"
 STOP
 
-IF $ARGUMENTS does not contain " " (no space between project name and theme):
-OUTPUT "Error: Missing theme description."
-OUTPUT "Usage: /bigtask-brainstorm <project-name> <theme>"
-OUTPUT "Example: /bigtask-brainstorm project-a user authentication system"
+IF $ARGUMENTS 不包含空格（项目名和主题之间无空格）:
+OUTPUT "Error: 缺少主题描述"
+OUTPUT "用法: /coding-brainstorm <项目名称> <探索主题>"
+OUTPUT "示例: /coding-brainstorm 用户中心 用户认证与权限管理系统"
 STOP
 
-SET $PROJECT_NAME = first word of $ARGUMENTS
-SET $THEME = $ARGUMENTS after first space
+SET $PROJECT_NAME = $ARGUMENTS 的第一个单词
+SET $THEME = $ARGUMENTS 第一个空格后的全部内容
 
-## Execution
+## 执行流程
 
-## Interactive Brainstorming Guidelines
+首先检查 `coding-dev/$PROJECT_NAME/` 下是否已存在 brainstorming 文件，如有则读取避免重复。
 
-During brainstorming, you MUST continuously engage with the user. DO NOT proceed without confirmation.
-
-### Required Interaction Pattern
-
-1. **Start with Questions**: Begin by asking the user clarifying questions about their needs
-2. **Propose and Confirm**: For each major decision point, propose options and wait for confirmation
-3. **Discuss Before Concluding**: When you identify issues or risks, discuss them with the user before moving on
-
-### Decision Points That Require User Confirmation
-
-- **Scope Definition**: What features are in/out of scope?
-- **Technology Preferences**: Any specific tech stack requirements?
-- **Architecture Choice**: Monolithic vs microservices, SPA vs MPA, etc.
-- **Priority**: What's most important - speed, maintainability, scalability?
-- **Constraints**: Budget, timeline, team skills, existing systems?
-
-### What to Do When Issues Arise
-
-When you encounter unclear requirements, conflicting constraints, or potential risks:
-
-1. STOP and describe the issue clearly
-2. Present options or questions
-3. WAIT for user response
-4. ONLY proceed after confirmation
-
-### NEVER Do These
-
-- DO NOT assume user preferences without asking
-- DO NOT make technology choices without discussing trade-offs
-- DO NOT proceed with unclear requirements
-- DO NOT skip over potential risks without flagging them
-- DO NOT finish without confirming key decisions
-
-### Example Interaction Flow
-
-```
-You: "Before we continue, I have a few questions:
-1. What is your target audience - consumers or enterprises?
-2. Do you have an existing database, or should we design from scratch?
-3. What is your timeline - days, weeks, or months?"
-
-[Wait for user response]
-
-You: "Based on what you mentioned, here are my initial thoughts on [X]. Does this align with your expectations?"
-
-[Wait for user response]
-
-...continue iterating until all key decisions are confirmed...
-```
+然后严格按照以下 5 个阶段依次执行。**每个阶段结束后必须暂停并等待用户确认**，才能进入下一阶段。
 
 ---
 
-Explore the following topic and generate comprehensive brainstorming notes:
+### 第一阶段：需求深层挖掘（5W1H）
 
-**Project Name**: $PROJECT_NAME
+目标：全面理解需求的背景、边界和优先级。
 
-**Theme**: $THEME
+必须向用户逐一提问以下维度，并记录回答：
 
-First, check existing brainstoriming files in `coding-dev/$PROJECT_NAME/` if they exist to avoid duplication.
+1. **What（做什么）**：需要实现什么功能？核心业务场景是什么？
+2. **Why（为什么做）**：解决什么痛点？是否有替代方案？
+3. **Who（目标用户）**：终端用户是谁？使用频率如何？
+4. **Where（部署环境）**：部署在云/私有化/边缘？目标平台？
+5. **When（时间线）**：期望的上线时间？是否有里程碑节点？
+6. **How（约束条件）**：预算？团队规模？现有技术栈？性能要求？
 
-Create a `coding-dev/$PROJECT_NAME/brainstorm.md` file with the following structure:
+**记录到输出文件**：requirements 部分
 
-```markdown
+**用户确认**：展示整理后的需求列表，请用户确认是否完整准确。确认后方可进入第二阶段。
 
+---
 
+### 第二阶段：技术选型分析
+
+目标：对关键技术栈给出至少 2 种可选方案，对比优劣后做出选择。
+
+对于每个关键技术决策（语言、框架、数据库、中间件等），按以下格式输出对比表：
+
+| 决策点 | 方案A | 方案B | 推荐 | 理由 |
+|--------|-------|-------|------|------|
+| 后端语言 | Node.js 20 | Python 3.12 | 方案A | 团队熟悉度/生态/性能 |
+
+必须从以下维度对比：
+- 团队技能匹配度
+- 社区活跃度与生态成熟度
+- 性能与可伸缩性
+- 学习曲线与交付速度
+- 长期维护成本
+
+**用户确认**：每项决策必须先展示对比、给出推荐理由，等待用户明确选择后，才能进入下一项。全部选型确认后进入第三阶段。
+
+---
+
+### 第三阶段：架构方案探索
+
+目标：给出 2 种候选架构方案，分析优劣后选定。
+
+必须产出的架构视图：
+
+1. **方案A**（推荐方案）：完整的架构图描述（分层/模块划分/数据流）
+2. **方案B**（备选方案）：不同的架构思路，对比优劣
+
+对比维度：
+- 复杂度与交付速度
+- 可维护性与可测试性
+- 可伸缩性与高可用
+- 与现有系统的兼容性
+
+**用户确认**：展示两种方案对比，给出推荐，用户确认选定后进入第四阶段。
+
+---
+
+### 第四阶段：风险评估
+
+目标：识别并评级所有已知风险。
+
+必须按以下分类输出风险矩阵：
+
+| 风险类别 | 风险描述 | 严重程度 | 发生概率 | 应对策略 |
+|---------|---------|---------|---------|---------|
+| 技术风险 | XXX | 高/中/低 | 高/中/低 | XXX |
+| 依赖风险 | XXX | 高/中/低 | 高/中/低 | XXX |
+| 进度风险 | XXX | 高/中/低 | 高/中/低 | XXX |
+| 安全风险 | XXX | 高/中/低 | 高/中/低 | XXX |
+
+**用户确认**：用户知晓并接受风险清单后进入第五阶段。
+
+---
+
+### 第五阶段：实施路线图
+
+目标：制定从 MVP 到迭代优化的分阶段实施计划。
+
+输出：
+1. **MVP 范围**：最核心的功能集合，建议 2-4 周交付
+2. **阶段二**：增强功能，建议在第 MVP 后 2-4 周
+3. **阶段三**：高级优化（性能/可观测性/容错）
+4. **里程碑定义**：每个阶段的完成标准
+
+**用户确认**：确认路线图可行后，撰写最终输出文件。
+
+---
+
+## 输出文件
+
+执行完所有阶段并确认后，写入 `coding-dev/$PROJECT_NAME/brainstorm.md`，**必须包含 YAML frontmatter**：
+
+```yaml
+---
+project: $PROJECT_NAME
+status: brainstorming-complete
+date: 2026-01-01
+key-decisions:
+  - domain: "技术选型"
+    decision: "Node.js 20 + Express"
+    reason: "团队技能匹配度高，生态成熟"
+    alternatives: ["Python 3.12 + FastAPI"]
+    confirmed-by-user: true
+  - domain: "架构方案"
+    decision: "分层单体架构（方案A）"
+    reason: "交付速度快，MVP 周期短"
+    alternatives: ["微服务架构（方案B）"]
+    confirmed-by-user: true
+risks:
+  - category: "技术风险"
+    description: "高并发场景下性能瓶颈"
+    severity: "中"
+    probability: "低"
+    mitigation: "预留水平扩展能力"
+---
 ```
 
-## File Modification Restriction
+frontmatter 之后的内容包含五个阶段的完整探索记录。
 
-DURING the entire brainstorming execution, you MUST only modify the following file:
+## 文件修改限制
 
+整个执行过程中，**只能修改以下文件**：
 - `coding-dev/$PROJECT_NAME/brainstorm.md`
 
-DO NOT modify any other files, including:
+禁止修改任何其他文件（代码文件、配置文件、其他 markdown 文件）。
 
-- No code files
-- No configuration files
-- No other markdown files
+如需参考现有项目文件，只读不修改。
 
-If you need to reference other files, read them but DO NOT modify them.
+## 最终确认
 
-## Final Confirmation
+在完成输出文件之前，必须与用户最终确认以下 3 项：
 
-Before completing brainstorming, CONFIRM the following with the user:
+1. **需求覆盖**：所有核心需求是否已在规划中覆盖？
+2. **技术决策**：所有的技术选型和架构选择是否都认同？
+3. **风险接受**：列出的风险是否可以接受？
 
-1. **Scope**: Is the defined scope correct?
-2. **Technology**: Are the recommended technology choices acceptable?
-3. **Risks**: Are you aware of and accept the identified risks?
+## 完成提示
 
-ONLY after user confirmation, output the completion message with next steps instruction:
+仅在用户最终确认后，输出完成信息：
 
 ```
 ────────────────────────────────────────
-🧠 Brainstorming Completed: $PROJECT_NAME
+🧠 深度方案设计完成: $PROJECT_NAME
 
-The brainstorming notes have been saved to:
+方案文档已保存到:
 coding-dev/$PROJECT_NAME/brainstorm.md
 
-To proceed, use:
-/bigtask-plan $PROJECT_NAME [your refined requirements]
+下一步:
+/coding-dev $PROJECT_NAME 按此方案启动全流程开发
 ────────────────────────────────────────
 ```

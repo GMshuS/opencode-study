@@ -24,12 +24,16 @@ permission:
     "go build*": "allow"
     "go test*": "allow"
     "go vet*": "allow"
-     # C/C++ (含 MSVC/Qt 生态)
+    "gofmt*": "allow"
+    # Python 格式化
+    "black *": "allow"
+    # C/C++ (含 MSVC/Qt 生态)
     "cmake *": "allow"
     "make *": "allow"
     "gcc *": "allow"
     "g++ *": "allow"
     "clang *": "allow"
+    "clang-format*": "allow"
     "qmake *": "allow"
     "jom *": "allow"
     "msbuild *": "allow"
@@ -47,13 +51,24 @@ permission:
 
 ## 步骤1：上下文收集
 1. 读取报错信息和异常输出
-2. 识别项目语言，加载对应编码规范技能：
-   - JS/TS → 加载 `@javascript-coding-standards`
-   - Python → 加载 `@python-coding-standards`
-   - Go → 加载 `@go-coding-standards`
-   - C/C++ → 加载 `@c-cpp-coding-standards`
+2. 确定语言/框架和编码规范：
+   - **优先使用 dev-master 传递的语言/框架和已加载编码规范**
+   - 如未提供则自动检测：JS/TS → `@javascript-coding-standards` / Python → `@python-coding-standards` / Go → `@go-coding-standards` / C/C++ → `@c-cpp-coding-standards`
 3. 使用 `git log --oneline -10` / `git blame <file>` 追溯近期变更，
    定位可能引入 BUG 的提交
+
+## 步骤1.5：自动格式修复（仅在存在风格问题时执行）
+
+阅读 dev-review 输出的问题清单：
+- 如果不包含任何格式/风格类问题 → 直接进入步骤2
+- 如果包含格式/风格类问题（缩进、命名规范、import 顺序等）：
+  - **JS/TS** → `npx prettier --write <涉及文件>`
+  - **Python** → `black <涉及文件>`
+  - **Go** → `gofmt -w <涉及文件>`
+  - **C/C++** → `clang-format -i <涉及文件>`
+- 格式化后重新运行格式检查工具验证修复
+- 如格式问题全部修复，标记"格式已修复"，继续步骤2
+- 如格式修复不涉及逻辑变更，无需进入步骤3~5，直接跳转到验证
 
 ## 步骤2：复现问题
 1. 运行触发 BUG 的命令，确认可稳定复现

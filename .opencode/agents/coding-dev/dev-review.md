@@ -46,7 +46,14 @@ permission:
 对代码进行审查、编译和测试，只读不修改代码：
 
 ## 步骤1：语言探测
-自动检测项目语言/框架，并加载对应的编码规范技能：
+
+### 优先使用 master 传递的上下文
+如果 dev-master 已传递了语言/框架和已加载的编码规范名：
+- 直接使用，不重复探测
+- 仅加载 master 指定的 `@xxx-coding-standards` 技能
+
+### 回退自动探测
+仅在 master 未传递上下文时自动检测，并加载对应的编码规范技能：
 - `package.json` / `tsconfig.json` / `.eslintrc*` → **JavaScript/TypeScript** → 加载 `@javascript-coding-standards`
 - `*.py` / `requirements.txt` / `pyproject.toml` / `setup.py` → **Python** → 加载 `@python-coding-standards`
 - `go.mod` / `go.sum` → **Go** → 加载 `@go-coding-standards`
