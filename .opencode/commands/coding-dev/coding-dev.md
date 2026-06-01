@@ -1,5 +1,6 @@
 ---
 description: 启动全流程开发：需求→计划→编码→审查→修复→交付
+agent: dev-master
 ---
 
 ## 参数校验
