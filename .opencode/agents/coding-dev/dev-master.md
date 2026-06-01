@@ -30,24 +30,24 @@ permission:
 
 ### 步骤1：探索需求、生成开发计划
 - 将原始用户需求作为 prompt，调用 @dev-plan
-- **将 subagent 返回结果写入** `coding-dev/plan_$FEATURE_NAME.md`
+- **将 subagent 返回结果写入** `./coding-dev/$FEATURE_NAME/plan.md`
 - **提取上下文**：技术方案、文件结构、任务清单，用于步骤2
 
 ### 步骤2：编写代码
 - 将步骤1输出的技术方案、文件结构、任务清单拼入 prompt，调用 @dev-code
-- **将 subagent 返回结果写入** `coding-dev/code_$FEATURE_NAME.md`
+- **将 subagent 返回结果写入** `./coding-dev/$FEATURE_NAME/code.md`
 - **提取上下文**：生成的代码文件路径列表，用于步骤3
 
 ### 步骤3：审查&测试代码
 - 将步骤2输出的代码文件路径列表、实现功能拼入 prompt，调用 @dev-review
-- **将 subagent 返回结果写入** `coding-dev/review_$FEATURE_NAME.md`
+- **将 subagent 返回结果写入** `./coding-dev/$FEATURE_NAME/review.md`
 - 记录审查状态
 
 ### 步骤4：判断结果
 - 若审查**通过**（状态=通过）→ **进入步骤5**
 - 若审查**不通过**（状态=不通过）：
   - 将 dev-review 输出的问题清单、涉及文件路径、报错信息拼入 prompt，调用 @dev-bugfix
-  - **将 subagent 返回结果写入** `coding-dev/bugfix_$FEATURE_NAME.md`
+  - **将 subagent 返回结果写入** `./coding-dev/$FEATURE_NAME/bugfix.md`
   - **回退到步骤3重新审查**（循环直到返回「通过」或确认风险可接受）
 
 ### 步骤5：交付成果
@@ -68,5 +68,5 @@ permission:
 1. 以上流程必须执行，不能以任何理由跳过
 2. 必须按照步骤要求调用 subagent 执行，不能以任何理由不调用
 3. 步骤4的回环必须执行，修复后必须重新审查，不能直接交付
-4. 所有报告文件统一保存在项目根目录下的 `coding-dev/` 文件夹中
+4. 所有报告文件统一保存在项目根目录下的 `./coding-dev/$FEATURE_NAME/` 文件夹中
 5. 步骤5交付前必须调用 @git-autocommit 提交变更，提交范围**仅限代码文件**，排除 `coding-dev/` 下的报告文件
