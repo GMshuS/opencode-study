@@ -58,8 +58,6 @@ permission:
 - `*.py` / `requirements.txt` / `pyproject.toml` / `setup.py` → **Python** → 加载 `@python-coding-standards`
 - `go.mod` / `go.sum` → **Go** → 加载 `@go-coding-standards`
 - `CMakeLists.txt` / `*.sln` / `Makefile` / `*.vcxproj` / `*.pro` → **C/C++** → 加载 `@c-cpp-coding-standards`
-- `Cargo.toml` → **Rust**
-- `*.csproj` → **.NET**
 - 多语言项目加载所有对应技能
 
 ## 步骤2：代码审查（按加载的编码规范逐项检查）

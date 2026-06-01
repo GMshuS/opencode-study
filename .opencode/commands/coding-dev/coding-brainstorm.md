@@ -173,12 +173,12 @@ frontmatter 之后的内容包含五个阶段的完整探索记录。
 
 ```
 ────────────────────────────────────────
-🧠 深度方案设计完成: $PROJECT_NAME
+深度方案设计完成: $PROJECT_NAME
 
 方案文档已保存到:
 coding-dev/$PROJECT_NAME/brainstorm.md
 
 下一步:
-/coding-dev $PROJECT_NAME 按此方案启动全流程开发
+/coding-dev $PROJECT_NAME coding-dev/$PROJECT_NAME/brainstorm.md 按此方案启动全流程开发
 ────────────────────────────────────────
 ```
