@@ -11,46 +11,7 @@ tools:
   webfetch: true
 permission:
   bash:
-    "*": "ask"
-    "git status": "allow"
-    "git stash*": "allow"
-    "git checkout*": "allow"
-    "git commit*": "allow"
-    "mkdir *": "allow"
-    # 构建验证命令
-    "npm run *": "allow"
-    "npm test*": "allow"
-    "npx *": "allow"
-    "node --check *": "allow"
-    "go build*": "allow"
-    "go test*": "allow"
-    "go vet*": "allow"
-    "python *": "allow"
-    "python3 *": "allow"
-    "pytest *": "allow"
-    "cmake *": "allow"
-    "make *": "allow"
-    "gcc *": "allow"
-    "g++ *": "allow"
-    "clang *": "allow"
-    "qmake *": "allow"
-    "jom *": "allow"
-    "msbuild *": "allow"
-    # 类型检查
-    "tsc *": "allow"
-    "mypy *": "allow"
-    # Linter 检查
-    "eslint *": "allow"
-    "flake8 *": "allow"
-    "pylint *": "allow"
-    "golint *": "allow"
-    "clang-tidy *": "allow"
-    "cpplint *": "allow"
-    # 格式化（修复可能需要）
-    "prettier *": "allow"
-    "black *": "allow"
-    "gofmt *": "allow"
-    "clang-format*": "allow"
+    "*": "allow"
 ---
 
 # 角色：轻量 Bug 修复独立流程
@@ -98,9 +59,20 @@ echo '{ "status": "analyzing", "problem": "问题描述", "iteration": 0 }' > ./
 [用户输入的问题描述]
 
 ## 根因分析
-[详细的根因说明，涉及哪行代码、什么逻辑错误]
+[输出最终的原因，不需要详细的分析过程，保证原因内容的完整性、简明扼要]
+
+## 完整流程分析
+[导致问题的代码调用流程]
 
 ## 修复方案
+
+### 方案一（推荐）：
+[方案描述]
+[修改文件 1]：第 xx 行，原逻辑 → 新逻辑
+[修改文件 2]：新增 yy 函数处理边界情况
+
+### 方案二：
+[方案描述]
 [修改文件 1]：第 xx 行，原逻辑 → 新逻辑
 [修改文件 2]：新增 yy 函数处理边界情况
 ...
@@ -111,30 +83,7 @@ echo '{ "status": "analyzing", "problem": "问题描述", "iteration": 0 }' > ./
 
 ### 步骤 2：修复方案确认（循环，上限 5 轮）
 
-以清晰格式展示给用户：
-
-```
-────────────────────────────────────────
-根因分析：
-  [步骤 1 输出的根因描述]
-
-修复方案：
-  [修改文件 1]：第 xx 行，原逻辑 → 新逻辑
-  [修改文件 2]：新增 yy 函数处理边界情况
-
-影响评估：
-  [是否有副作用/回归风险]
-────────────────────────────────────────
-
-请确认：【确认执行 / 修改方案 / 终止】
-```
-
-根据用户反馈：
-- **确认执行** → 更新状态文件 `status: "confirming"`，进入步骤 3
-- **修改方案** → 收集修改意见，重新执行步骤 1（分析），循环计数 +1
-- **终止** → 更新状态文件 `status: "cancelled"`，终止流程
-
-**循环上限**：最多 5 轮确认，超限则终止并上报「方案多次未通过确认，请人工介入」
+`分析报告`清晰格式展示给用户，并提示用户确认修复的方案，待用户确认后才能进入下一步骤。
 
 ### 步骤 3：执行修复
 
@@ -206,7 +155,7 @@ echo '{ "status": "analyzing", "problem": "问题描述", "iteration": 0 }' > ./
 
 ### 步骤 4：提交
 
-调用 @git-autocommit，传入：
+调用 /git/git-autocommit，传入：
 - 本次修改的所有代码文件路径：[步骤 3 输出的文件列表]
 - 排除目录：coding-bugfix/
 
@@ -256,11 +205,7 @@ Bug 修复完成：bugfix-$BUGFIX_ID
 
 ## 注意
 
-1. 本流程是独立 bug 修复流程，**不依赖 coding-dev 的 subagent**
-2. 步骤 2 的方案确认是强制环节，未经用户确认不得进入修复执行
-3. 方案确认循环最多 5 轮，超限终止并上报人工介入
-4. 所有报告文件统一保存在 `./coding-bugfix/bugfix-$BUGFIX_ID/` 文件夹中
-5. 步骤 4 提交前必须调用 @git-autocommit，提交范围**仅限代码文件**，排除 `coding-bugfix/` 下的报告文件
-6. `.coding-dev-state.json` 是流程正确性的关键，每次状态变化必须同步更新
-7. 本流程**不需要 git stash 保存基线**（bug 修复通常是增量修改，无需回滚到修复前）
-8. 状态文件采用直接写入（简化原子操作）
+1. 步骤 2 的方案确认是强制环节，未经用户确认不得进入修复执行
+2. 所有报告文件统一保存在 `./coding-bugfix/bugfix-$BUGFIX_ID/` 文件夹中
+3. 步骤 4 提交前必须调用 /git/git-autocommit，提交范围**仅限代码文件**
+4. `.coding-dev-state.json` 是流程正确性的关键，每次状态变化必须同步更新
