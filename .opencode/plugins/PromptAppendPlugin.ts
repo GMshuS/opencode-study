@@ -98,7 +98,7 @@ export const PromptAppendPlugin = (async (ctx) => {
          */
         async "experimental.chat.system.transform"(input, output) {
             // output.system.push(`用户说hi，你只要回复"hi, opencode"，不要回复其它内容。`);
-            notfiy(`✅ 已自动注入系统提示词`, "通知");
+            // notfiy(`✅ 已自动注入系统提示词`, "通知");
         },
 
         /**
