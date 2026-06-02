@@ -3,8 +3,6 @@
 # Define two target directories
 TARGET_DIRS=(
     "$HOME/.config/opencode/agents"
-    "$HOME/.codebuddy/agents"
-    "$HOME/.claude/agents"
 )
 
 # Get the current script directory (source folder)

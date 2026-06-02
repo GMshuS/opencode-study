@@ -3,8 +3,6 @@ setlocal enabledelayedexpansion
 
 :: Define two target directories
 set "TARGET_DIR1=%USERPROFILE%\.config\opencode\agents"
-set "TARGET_DIR2=%USERPROFILE%\.roo\agents"
-set "TARGET_DIR3=%USERPROFILE%\.trae-cn\agents"
 
 :: Create directories and copy folders
 for %%D in ("%TARGET_DIR1%" "%TARGET_DIR2%" "%TARGET_DIR3%") do (

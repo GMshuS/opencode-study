@@ -146,14 +146,24 @@ echo '{ "status": "analyzing", "problem": "问题描述", "iteration": 0 }' > ./
 5. 执行功能验证（复现 BUG 并确认修复）
 
 **构建验证策略**（优先级自上而下）：
-1. 项目专用构建脚本（AGENTS.md / package.json 中的 build 命令）
-2. 工程构建脚本（build.sh / Makefile / CMakeLists.txt）
-3. 语言通用命令：
-   - JS/TS: `npm run build` 或 `npx tsc --noEmit`
-   - Go: `go build ./...`
-   - Python: `python -m py_compile <文件>`
-   - C/C++: `cmake --build .` 或 `make`
-4. 降级验证（工具链不可用时执行静态检查）
+
+1. **项目专用构建脚本**（AGENTS.md / package.json / pyproject.toml 中的 build 命令）
+
+2. **工程构建脚本**（build.sh / Makefile / CMakeLists.txt）
+
+3. **语言通用命令**：
+
+   | 语言 | 构建命令 |
+   |------|---------|
+   | JS/TS | `npm run build` 或 `npx tsc --noEmit` |
+   | Go | `go build ./...` |
+   | Python | `python -m py_compile <文件>` |
+   | C/C++ (MSVC) | `msbuild /t:rebuild` |
+   | C/C++ (Qt) | `qmake` + `jom` |
+   | C/C++ (CMake) | `cmake --build .` |
+   | C/C++ (GCC) | `gcc -o <output> <file>` |
+
+4. **降级验证**（工具链不可用时执行静态检查）
 
 **类型检查**（如启用）：
 - TypeScript: `npx tsc --noEmit`（存在 tsconfig.json）

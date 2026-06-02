@@ -1,4 +1,5 @@
 ---
+description: 启动轻量 Bug 修复流程，内联分析/确认/修复/验证/提交
 agent: bugfix-master
 ---
 启动轻量 Bug 修复流程

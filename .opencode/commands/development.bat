@@ -3,7 +3,6 @@ setlocal enabledelayedexpansion
 
 :: Define two target directories
 set "TARGET_DIR1=%USERPROFILE%\.config\opencode\commands"
-set "TARGET_DIR2=%USERPROFILE%\.roo\commands"
 set "TARGET_DIR4=%USERPROFILE%\.codebuddy\commands"
 set "TARGET_DIR5=%USERPROFILE%\.claude\commands"
 

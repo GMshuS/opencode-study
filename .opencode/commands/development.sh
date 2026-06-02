@@ -3,7 +3,6 @@
 # Define two target directories
 TARGET_DIRS=(
     "$HOME/.config/opencode/commands"
-    "$HOME/.roo/commands"
     "$HOME/.codebuddy/commands"
     "$HOME/.claude/commands"
 )
