@@ -147,21 +147,7 @@ permission:
 
 ### 步骤 4：编译验证（循环，上限 2 次重试）
 
-**构建验证策略**（优先级自上而下）：
-1. **项目专用构建脚本**（AGENTS.md / package.json / CMakeLists.txt 中的 build 命令）
-2. **工程构建脚本**（build.sh / Makefile）
-3. **语言通用命令**：
-
-   | 语言 | 构建命令 |
-   |------|---------|
-   | JS/TS | `npm run build` 或 `npx tsc --noEmit` |
-   | Go | `go build ./...` |
-   | Python | `python -m py_compile <文件>` |
-   | C/C++ (Qt) | `qmake ZNBProject.pro && make` |
-   | C/C++ (CMake) | `cmake --build .` |
-   | C/C++ (GCC) | `gcc -o <output> <file>` |
-
-4. **降级验证**（工具链不可用时执行静态检查）
+**构建与静态检查**：复用 `auto-verify-code` skill 的完整验证流程（构建验证 + 类型检查 + Linter 检查）。
 
 **重试机制**：
 - 首次失败 → 记录错误到 `./bugfix-flow/$DATE/bugfix-$BUGFIX_ID/errors.log`
@@ -169,16 +155,6 @@ permission:
 - 重试前询问用户「是否重试（剩余 N 次）或终止」
 - 重试 2 次均失败 → 上报「多次重试失败，请人工介入」
 - 编译通过 → 进入下一步
-
-**类型检查**（如项目启用）：
-- TypeScript: `npx tsc --noEmit`
-- Python: `mypy <涉及文件>`
-
-**Linter 检查**（如项目启用）：
-- JS/TS: `npx eslint <涉及文件>`
-- Python: `flake8 <涉及文件>`
-- Go: `go vet ./...`
-- C/C++: `clang-tidy <涉及文件>`
 
 ---
 
