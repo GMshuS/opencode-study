@@ -59,7 +59,7 @@ mv .coding-dev-state.json.tmp .coding-dev-state.json
   - 否则 → 使用原始用户需求作为 prompt
 - 调用 @dev-plan
 - **将 subagent 返回结果写入** `./coding-dev/$FEATURE_NAME/plan.md`
-- **提取上下文**：技术方案、文件结构、任务清单、功能实现方案，用于步骤1.2
+- **提取上下文**：技术选型、架构与文件结构、需求分析与实现方案、全局风险与依赖，用于步骤1.2
 
 ### 步骤1.2：计划确认
 
@@ -68,9 +68,8 @@ mv .coding-dev-state.json.tmp .coding-dev-state.json
 1. 从 `./coding-dev/$FEATURE_NAME/plan.md` 提取以下摘要：
    - **技术选型**：语言/框架/版本
    - **架构与文件结构**：核心目录与文件
-   - **开发任务清单**：含依赖关系的全部任务
-   - **功能实现方案**：核心功能的实现方式及关键决策
-   - **风险与约束**：已知风险、依赖版本、不做范围
+   - **需求分析与实现方案**：按功能组织的需求→数据模型→方案→任务清单（含验收条件）
+   - **全局风险与依赖**：已知风险、依赖版本、全局排除项
 
 2. 以清晰格式展示给用户，并提问：**「以上开发计划是否确认？如需调整请说明」**
 
@@ -79,7 +78,7 @@ mv .coding-dev-state.json.tmp .coding-dev-state.json
    - **要求修改** → 收集修改意见，重新调用 @dev-plan 修正计划，覆盖 plan.md，更新状态 `status: "plan-revising"`，再次回到步骤1.2 循环
    - **终止** → 更新状态文件 `status: "cancelled"`，终止流程
 
-4. 确认循环上限：最多允许 3 轮修正，超限则终止并上报「计划多次未通过确认，请人工介入」
+4. 确认循环上限：最多允许 5 轮修正，超限则终止并上报「计划多次未通过确认，请人工介入」
 
 ### 步骤1.5：保存工作区基线
 - 执行 `git stash push -u -m "coding-dev-$FEATURE_NAME-before"`
@@ -149,9 +148,10 @@ mv .coding-dev-state.json.tmp .coding-dev-state.json
 - 语言/框架: [dev-plan 输出的语言/框架]
 - 已加载编码规范: [dev-plan 输出的规范技能名]
 - 架构方案: [dev-plan 的架构设计摘要]
-- 当前批次任务清单: [本 Level 的任务列表]
+- 当前批次任务清单: [本 Level 的任务列表，含验收条件]
 - 依赖文件路径: [前置批次已生成的文件]
 - 关键约束: [性能/安全/兼容性约束]
+- plan.md 路径: ./coding-dev/$FEATURE_NAME/plan.md
 
 ### 传递给 @dev-review
 - 语言/框架: [同上]
