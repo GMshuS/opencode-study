@@ -45,15 +45,17 @@ permission:
 
 对代码进行审查、编译和测试，只读不修改代码：
 
-## 步骤 1：语言探测
+## 步骤 1：语言探测与上下文读取
 
-### 优先使用 master 传递的上下文
-如果 dev-master 已传递了语言/框架和已加载的编码规范名：
-- 直接使用，不重复探测
-- 仅加载 master 指定的 `@xxx-coding-standards` 技能
+### 从文件读取上下文
+1. **先读取** `./coding-dev/$FEATURE_NAME/code.md` 获取生成的代码文件清单和功能摘要
+2. **再读取** `./coding-dev/$FEATURE_NAME/plan.md` 获取验收条件和架构方案
+3. 从文件内容中提取语言/框架信息和已加载的编码规范名 → 直接使用，不重复探测
+4. 仅加载文件中指定的 `@xxx-coding-standards` 技能
 
-### 回退自动探测
-仅在 master 未传递上下文时自动检测，并加载对应的编码规范技能：
+### 回退自动探测（仅在文件不存在或信息不完整时）
+dev-master 不再传递上下文，由各子 agent 自行从文件读取。
+自动检测并加载对应的编码规范技能：
 - `package.json` / `tsconfig.json` / `.eslintrc*` → **JavaScript/TypeScript** → 加载 `@javascript-coding-standards`
 - `*.py` / `requirements.txt` / `pyproject.toml` / `setup.py` → **Python** → 加载 `@python-coding-standards`
 - `go.mod` / `go.sum` → **Go** → 加载 `@go-coding-standards`

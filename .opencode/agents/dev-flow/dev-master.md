@@ -59,7 +59,6 @@ mv .coding-dev-state.json.tmp .coding-dev-state.json
   - 否则 → 使用原始用户需求作为 prompt
 - 调用 @dev-plan
 - **将 subagent 返回结果写入** `./coding-dev/$FEATURE_NAME/plan.md`
-- **提取上下文**：技术选型、架构与文件结构、需求分析与实现方案、全局风险与依赖，用于步骤1.2
 
 ### 步骤1.2：计划确认
 
@@ -75,7 +74,13 @@ mv .coding-dev-state.json.tmp .coding-dev-state.json
 
 3. 根据用户反馈：
    - **确认通过** → 更新状态文件 `status: "plan-confirmed"`，继续执行步骤1.5
-   - **要求修改** → 收集修改意见，重新调用 @dev-plan 修正计划，覆盖 plan.md，更新状态 `status: "plan-revising"`，再次回到步骤1.2 循环
+   - **要求修改** → 收集修改意见，
+     更新状态文件 `status: "plan-revising"`，
+     重新调用 @dev-plan 修正计划：
+     - 告知 @dev-plan 读取 `./coding-dev/$FEATURE_NAME/plan.md` 了解已有计划
+     - 传递用户的修改意见：「[用户反馈的具体修改要求]」
+     覆盖 plan.md，
+     回到步骤1.2 循环
    - **终止** → 更新状态文件 `status: "cancelled"`，终止流程
 
 4. 确认循环上限：最多允许 5 轮修正，超限则终止并上报「计划多次未通过确认，请人工介入」
@@ -94,17 +99,18 @@ mv .coding-dev-state.json.tmp .coding-dev-state.json
    - **Level-N**：依此类推
 3. 文件变更追踪（每批 subagent 调用前后）：
    a. 调用前执行 `git diff --name-only > ./coding-dev/$FEATURE_NAME/before_files.txt`
-   b. 按 Level 顺序分批调用 @dev-code，每批传入当前 Level 的任务清单
-      - 每批说明：这是第几批、关联哪些已有文件
+   b. 按 Level 顺序分批调用 @dev-code
+      - 告知 @dev-code 读取 `./coding-dev/$FEATURE_NAME/plan.md` 获取任务清单和架构方案
+      - 告知当前是第几批、已经生成的文件路径
       - 第一批未完成不启动第二批
    c. 调用后执行 `git diff --name-only > ./coding-dev/$FEATURE_NAME/after_files.txt`
    d. 对比 `comm -13 before_files.txt after_files.txt` 得到本次 subagent 修改的文件清单
    e. 将文件清单保存到 `./coding-dev/$FEATURE_NAME/modified_files.txt`
 4. **将每次 subagent 返回结果写入** `./coding-dev/$FEATURE_NAME/code.md`
-5. **提取上下文**：生成的代码文件路径列表，用于步骤3
 
 ### 步骤3：审查&测试代码
-- 将步骤2输出的代码文件路径列表、实现功能拼入 prompt，调用 @dev-review
+- 调用 @dev-review，告知其读取 `./coding-dev/$FEATURE_NAME/code.md` 获取代码文件清单，
+  读取 `./coding-dev/$FEATURE_NAME/plan.md` 了解验收条件
 - **将 subagent 返回结果写入** `./coding-dev/$FEATURE_NAME/review.md`
 - 记录审查状态
 
@@ -118,7 +124,8 @@ mv .coding-dev-state.json.tmp .coding-dev-state.json
 - 若审查**通过**（状态=通过）→ **进入步骤5**
 - 若审查**不通过**（状态=不通过）：
   - 调用前执行 `git diff --name-only > ./coding-dev/$FEATURE_NAME/before_files.txt`
-  - 将 dev-review 输出的问题清单、涉及文件路径、报错信息拼入 prompt，调用 @dev-bugfix
+  - 调用 @dev-bugfix，告知其读取 `./coding-dev/$FEATURE_NAME/review.md` 获取问题清单，
+    读取 `./coding-dev/$FEATURE_NAME/plan.md` 了解技术方案
   - **将 subagent 返回结果写入** `./coding-dev/$FEATURE_NAME/bugfix.md`
   - 调用后执行 `git diff --name-only > ./coding-dev/$FEATURE_NAME/after_files.txt`，比对获取修改文件清单
   - **读取** `./coding-dev/$FEATURE_NAME/review.md` **中的历史审查结果，作为上下文**
@@ -133,38 +140,60 @@ mv .coding-dev-state.json.tmp .coding-dev-state.json
 - 以原子方式更新状态文件 `status: "delivered"`
 - 汇总交付最终成果
 
-## 上下文传递模板（必须完整填充）
+## 文件通信协议
 
-调用每个 subagent 时，必须按以下模板拼入 prompt，禁止遗漏字段：
+dev-master 与子 agent 之间通过文件通信，不再通过上下文模板传递字段。
+
+### 通信规范
+
+| 步骤 | 输出文件 | 输入文件（供下步读取） |
+|------|---------|---------------------|
+| dev-plan（首次规划） | `./coding-dev/$FEATURE_NAME/plan.md` | — |
+| dev-plan（修正模式） | `./coding-dev/$FEATURE_NAME/plan.md` | `plan.md`（前一次输出） |
+| dev-code | `./coding-dev/$FEATURE_NAME/code.md` | `plan.md` |
+| dev-review | `./coding-dev/$FEATURE_NAME/review.md` | `code.md` + `plan.md` |
+| dev-bugfix | `./coding-dev/$FEATURE_NAME/bugfix.md` | `review.md` + `plan.md` |
+
+### 调用规范
+
+调用子 agent 时，dev-master **仅传递**：
+1. 功能名称 `$FEATURE_NAME`
+2. 结果文件路径（告知子 agent 去哪里读取上下文）
+3. 必要轻量信息（如当前批次号、依赖文件列表）
+
+禁止在 prompt 中传递字段级别的上下文提取结果。
+
+### 一致性保障
+
+- **plan.md 是真理来源（SSOT）**：所有子 agent 从 plan.md 获取语言/框架、架构方案、验收条件
+- **文件即契约**：各子 agent 的输出格式在其定义文件中约定，dev-master 不进行字段级解析
+- **修改只影响一点**：如需增减字段，只需修改对应子 agent 的 agent 定义文件，不需要改 dev-master
 
 ### 传递给 @dev-plan
+
+**（首次规划时）**
 - 原始用户需求: [完整需求描述]
 - （如果有）brainstorm 前置探索:
   - 技术决策: [brainstorm 中的 key-decisions]
   - 风险清单: [brainstorm 中的 risks]
   - 需求描述: [brainstorm 中的需求分析]
 
+**（修正模式时，即步骤1.2循环调用的场景）**
+- plan.md 路径: `./coding-dev/$FEATURE_NAME/plan.md`
+- 修改意见: [步骤1.2中用户反馈的修改要求]
+
 ### 传递给 @dev-code（每批独立传入）
-- 语言/框架: [dev-plan 输出的语言/框架]
-- 已加载编码规范: [dev-plan 输出的规范技能名]
-- 架构方案: [dev-plan 的架构设计摘要]
-- 当前批次任务清单: [本 Level 的任务列表，含验收条件]
-- 依赖文件路径: [前置批次已生成的文件]
-- 关键约束: [性能/安全/兼容性约束]
-- plan.md 路径: ./coding-dev/$FEATURE_NAME/plan.md
+- plan.md 路径: `./coding-dev/$FEATURE_NAME/plan.md`
+- 当前批次号: [第 N 批]
+- 已生成的文件路径: [前置批次已生成的文件]
 
 ### 传递给 @dev-review
-- 语言/框架: [同上]
-- 已加载编码规范: [同上]
-- 代码文件路径: [dev-code 输出的全部文件列表]
-- 实现功能: [dev-code 的功能摘要]
+- code.md 路径: `./coding-dev/$FEATURE_NAME/code.md`
+- plan.md 路径: `./coding-dev/$FEATURE_NAME/plan.md`
 
 ### 传递给 @dev-bugfix
-- 语言/框架: [同上]
-- 已加载编码规范: [同上]
-- 问题清单: [dev-review 的问题列表]
-- 涉及文件: [问题对应文件路径]
-- 报错信息: [原始错误输出]
+- review.md 路径: `./coding-dev/$FEATURE_NAME/review.md`
+- plan.md 路径: `./coding-dev/$FEATURE_NAME/plan.md`
 
 ### 传递给 @git-autocommit
 - 本次修改的所有代码文件路径: [全部生成/修改的文件列表]

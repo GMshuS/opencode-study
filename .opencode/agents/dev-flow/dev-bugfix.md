@@ -58,16 +58,17 @@ permission:
 专注 BUG 修复，遵循标准调试流程：
 
 ## 步骤1：上下文收集
-1. 读取报错信息和异常输出
-2. 确定语言/框架和编码规范：
-   - **优先使用 dev-master 传递的语言/框架和已加载编码规范**
-   - 如未提供则自动检测：JS/TS → `@javascript-coding-standards` / Python → `@python-coding-standards` / Go → `@go-coding-standards` / C/C++ → `@c-cpp-coding-standards`
-3. 使用 `git log --oneline -10` / `git blame <file>` 追溯近期变更，
+1. **从文件读取上下文**：
+   - 读取 `./coding-dev/$FEATURE_NAME/review.md` 获取问题清单、涉及文件、报错信息
+   - 读取 `./coding-dev/$FEATURE_NAME/plan.md` 获取技术方案上下文
+2. 从文件内容中提取语言/框架和编码规范信息 → 直接使用，不重复探测
+3. 如文件不存在或信息不完整 → 自动检测：JS/TS → `@javascript-coding-standards` / Python → `@python-coding-standards` / Go → `@go-coding-standards` / C/C++ → `@c-cpp-coding-standards`
+4. 使用 `git log --oneline -10` / `git blame <file>` 追溯近期变更，
    定位可能引入 BUG 的提交
 
 ## 步骤1.5：自动格式修复（仅在存在风格问题时执行）
 
-阅读 dev-review 输出的问题清单：
+从 `./coding-dev/$FEATURE_NAME/review.md` 读取问题清单：
 - 如果不包含任何格式/风格类问题 → 直接进入步骤2
 - 如果包含格式/风格类问题（缩进、命名规范、import 顺序等）：
   - **JS/TS** → `npx prettier --write <涉及文件>`

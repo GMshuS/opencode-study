@@ -43,15 +43,21 @@ permissions:
 
 严格按照计划编写代码：
 
-## 步骤1：语言探测
+## 步骤1：语言探测与上下文读取
 
-### 优先使用 master 传递的上下文
-如果 dev-master 已传递了语言/框架信息和已加载的编码规范名：
-- 直接使用，不重复探测
-- 仅加载 master 指定的 `@xxx-coding-standards` 技能
+### 从 plan.md 读取上下文
+1. **先读取** `./coding-dev/$FEATURE_NAME/plan.md` 获取：
+   - 语言/框架/版本
+   - 已加载编码规范名（如 `@javascript-coding-standards`）
+   - 架构设计方案
+   - 当前批次任务清单及验收条件
+   - 关键约束
+2. 如果 plan.md 存在且包含上述信息 → 直接使用，不重复探测
+3. 仅加载 plan.md 中指定的 `@xxx-coding-standards` 技能
 
-### 回退自动探测
-仅在 master 未传递上下文时执行语言自检测：
+### 回退自动探测（仅在 plan.md 不存在或信息不完整时）
+dev-master 不再传递上下文，由各子 agent 自行从文件读取。
+回退自动探测：
 - `package.json` / `tsconfig.json` / `*.js` / `*.ts` / `*.tsx` → **JavaScript/TypeScript** → 加载 `@javascript-coding-standards`
 - `setup.py` / `pyproject.toml` / `requirements.txt` / `*.py` → **Python** → 加载 `@python-coding-standards`
 - `go.mod` / `*.go` → **Go** → 加载 `@go-coding-standards`
