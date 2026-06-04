@@ -29,7 +29,7 @@ enabledAutoRun: true
 
 初始化状态文件 `./bugfix-flow/$DATE/bugfix-$BUGFIX_ID/.coding-dev-state.json`：
 ```json
-{ "status": "analyzing", "problem": "<问题描述>", "iteration": 0 }
+{ "status": "analyzing", "problem": "<问题描述>" }
 ```
 
 启动时校验状态文件 JSON 完整性：
@@ -55,6 +55,8 @@ enabledAutoRun: true
 
 ### 步骤 2：方案确认（循环，上限 5 轮）
 
+使用内存变量 `$CONFIRM_COUNT`（初始值 0，不写入状态文件）跟踪确认轮次。
+
 直接向用户提问确认：
 
 ```
@@ -63,7 +65,7 @@ enabledAutoRun: true
 
 根据用户反馈：
 - **确认执行** → 将修复方案写入 `fix-plan.md`，更新状态 `status: "confirmed"`，进入步骤 3
-- **修改方案** → 收集修改意见，重新执行步骤 1（分析），循环计数 +1
+- **修改方案** → 收集修改意见，`$CONFIRM_COUNT` 加 1。若 `$CONFIRM_COUNT >= 5` 则终止并上报「方案多次未通过确认，请人工介入」；否则重新执行步骤 1（分析）
 - **终止** → 更新状态 `status: "cancelled"`，终止流程
 
 **保存修复方案到本地**：`./bugfix-flow/$DATE/bugfix-$BUGFIX_ID/fix-plan.md`
@@ -94,9 +96,38 @@ enabledAutoRun: true
 
 **执行内容**：
 1. 按确认的修复方案（`fix-plan.md`）修改代码
-2. 每次修改后记录变更内容
+2. 每次修改后，将具体变更内容追加到 `fix-plan.md` 的「实际修改内容」章节，以文件为单位列出：
+   - 文件完整路径
+   - 修改位置（行号范围）
+   - 修改前的代码片段
+   - 修改后的代码片段
+   - 新增文件则注明「新增文件」及完整内容
 
 更新状态文件 `status: "fixing"`。
+
+**追加到 fix-plan.md 的格式示例**：
+```markdown
+## 实际修改内容
+
+### `src/services/user.ts`
+- **修改位置**: 第 88-92 行
+- **修改前**:
+  ```typescript
+  if (user.role === 'admin') {
+    return true;
+  }
+  ```
+- **修改后**:
+  ```typescript
+  if (user.role === 'admin' && user.isActive) {
+    return true;
+  }
+  ```
+
+### `src/utils/validator.ts`
+- **新增文件**：第 1-30 行
+- **修改内容**: 新增 `validateUserStatus` 函数，用于校验用户活跃状态
+```
 
 ---
 
@@ -154,7 +185,7 @@ enabledAutoRun: true
 - Linter：【通过/发现问题】
 
 ## 提交信息
-[步骤 5 生成的提交信息]
+详见 `./bugfix-flow/$DATE/bugfix-$BUGFIX_ID/commit-msg.txt`
 ```
 
 汇总交付成果向用户展示：
@@ -193,7 +224,7 @@ enabledAutoRun: true
 
 ```
 .coding-dev-state.json 贯穿全流程（直接写入）：
-  初始化   → { status: "analyzing",  problem: "...", iteration: 0 }
+  初始化   → { status: "analyzing",  problem: "..." }
   分析完成  → { status: "analyzed" }
   方案确认  → { status: "confirmed" }
   方案终止  → { status: "cancelled" }
