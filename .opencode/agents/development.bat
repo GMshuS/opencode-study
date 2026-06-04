@@ -5,7 +5,7 @@ setlocal enabledelayedexpansion
 set "TARGET_DIR1=%USERPROFILE%\.config\opencode\agents"
 
 :: Create directories and copy folders
-for %%D in ("%TARGET_DIR1%" "%TARGET_DIR2%" "%TARGET_DIR3%") do (
+for %%D in ("%TARGET_DIR1%") do (
     set "DEST=%%~D"
     if not exist "!DEST!" (
         echo Creating directory: !DEST!

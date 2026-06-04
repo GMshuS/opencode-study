@@ -4,7 +4,7 @@
 TARGET_DIRS=(
     "$HOME/.config/opencode/commands"
     "$HOME/.codebuddy/commands"
-    "$HOME/.claude/commands"
+    "$HOME/.roo/commands"
 )
 
 # Get the current script directory (source folder)

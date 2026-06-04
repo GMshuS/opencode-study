@@ -2,9 +2,7 @@
 
 # Define two target directories
 TARGET_DIRS=(
-    "$HOME/.config/opencode/skills"
-    "$HOME/.roo/skills"
-    "$HOME/.codebuddy/skills"
+    "$HOME/.codebuddy/agents"
 )
 
 # Get the current script directory (source folder)
