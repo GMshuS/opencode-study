@@ -4,6 +4,7 @@ setlocal enabledelayedexpansion
 :: Define two target directories
 set "TARGET_DIR1=%USERPROFILE%\.config\opencode\agents"
 
+
 :: Create directories and copy folders
 for %%D in ("%TARGET_DIR1%") do (
     set "DEST=%%~D"
@@ -15,6 +16,12 @@ for %%D in ("%TARGET_DIR1%") do (
             pause
             exit /b 1
         )
+    )
+
+    echo.
+    echo Cleaning existing folders in destination...
+    for /d %%F in ("!DEST!\*") do (
+        rmdir /S /Q "%%F" >nul 2>&1
     )
 
     echo.

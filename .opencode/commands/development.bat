@@ -3,7 +3,7 @@ setlocal enabledelayedexpansion
 
 :: Define two target directories
 set "TARGET_DIR1=%USERPROFILE%\.config\opencode\commands"
-set "TARGET_DIR2=%USERPROFILE%\.roo\skills"
+set "TARGET_DIR2=%USERPROFILE%\.roo\commands"
 set "TARGET_DIR3=%USERPROFILE%\.codebuddy\commands"
 
 
@@ -18,6 +18,12 @@ for %%D in ("%TARGET_DIR1%" "%TARGET_DIR2%" "%TARGET_DIR3%") do (
             pause
             exit /b 1
         )
+    )
+
+    echo.
+    echo Cleaning existing folders in destination...
+    for /d %%F in ("!DEST!\*") do (
+        rmdir /S /Q "%%F" >nul 2>&1
     )
 
     echo.

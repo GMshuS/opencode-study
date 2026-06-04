@@ -27,6 +27,12 @@ for DEST in "${TARGET_DIRS[@]}"; do
     fi
 
     echo ""
+    echo "Cleaning existing folders in destination..."
+    for dir in "$DEST"/*/; do
+        [ -d "$dir" ] && rm -rf "$dir"
+    done
+
+    echo ""
     echo "Copying folders to: \"$DEST\""
     echo "----------------------------------------------------"
 

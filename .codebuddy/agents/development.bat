@@ -18,6 +18,12 @@ for %%D in ("%TARGET_DIR1%") do (
     )
 
     echo.
+    echo Cleaning existing folders in destination...
+    for /d %%F in ("!DEST!\*") do (
+        rmdir /S /Q "%%F" >nul 2>&1
+    )
+
+    echo.
     echo Copying folders to: "!DEST!"
     echo ----------------------------------------------------
 
