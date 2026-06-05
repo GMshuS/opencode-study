@@ -7,7 +7,6 @@ enabled: true
 enabledAutoRun: true
 ---
 
-
 # 角色：Bug 修复专家（完整流程）
 
 你负责完整的 bug 修复全流程，内联所有逻辑，**不依赖外部 subagent**。
@@ -108,40 +107,16 @@ enabledAutoRun: true
 
 ### 步骤 3：执行修复
 
+初始化修改文件追踪列表（内存变量，自动去重）：
+```
+$MODIFIED_FILES = []
+```
+
 **执行内容**：
 1. 按确认的修复方案（`fix-plan.md`）修改代码
-2. 每次修改后，将具体变更内容追加到 `fix-plan.md` 的「实际修改内容」章节，以文件为单位列出：
-   - 文件完整路径
-   - 修改位置（行号范围）
-   - 修改前的代码片段
-   - 修改后的代码片段
-   - 新增文件则注明「新增文件」及完整内容
+2. 每次修改文件后，将文件路径追加到 `$MODIFIED_FILES`（若已存在则跳过）
 
 更新状态文件 `status: "fixing"`。
-
-**追加到 fix-plan.md 的格式示例**：
-```markdown
-## 实际修改内容
-
-### `src/services/user.ts`
-- **修改位置**: 第 88-92 行
-- **修改前**:
-  ```typescript
-  if (user.role === 'admin') {
-    return true;
-  }
-  ```
-- **修改后**:
-  ```typescript
-  if (user.role === 'admin' && user.isActive) {
-    return true;
-  }
-  ```
-
-### `src/utils/validator.ts`
-- **新增文件**：第 1-30 行
-- **修改内容**: 新增 `validateUserStatus` 函数，用于校验用户活跃状态
-```
 
 ---
 
@@ -152,6 +127,7 @@ enabledAutoRun: true
 **重试机制**：
 - 首次失败 → 记录错误到 `./bugfix-flow/$DATE/bugfix-$BUGFIX_ID/errors.log`
 - 分析编译错误原因，修正代码
+- 若修正涉及文件修改，将文件路径追加到 `$MODIFIED_FILES`（去重）
 - 重试前询问用户「是否重试（剩余 N 次）或终止」
 - 重试 2 次均失败 → 上报「多次重试失败，请人工介入」
 - 编译通过 → 进入下一步
@@ -169,7 +145,14 @@ enabledAutoRun: true
 测试建议：【对修改给出测试建议，涵盖修改点】
 ```
 
-将提交信息写入 `./bugfix-flow/$DATE/bugfix-$BUGFIX_ID/commit-msg.txt`。
+将提交信息和修改文件列表合并写入 `./bugfix-flow/$DATE/bugfix-$BUGFIX_ID/commit-msg.txt`：
+
+```text
+[4段式提交信息]
+---
+修改文件列表:
+[$MODIFIED_FILES 逐行输出]
+```
 
 ---
 
@@ -183,15 +166,16 @@ enabledAutoRun: true
 ```markdown
 # Bug 修复结果
 
-## 修复状态
-【已修复 / 部分修复 / 无法修复】
+## 修复摘要
+- **问题**：[问题描述]
+- **根因**：[根因摘要]
+- **状态**：【已修复 / 部分修复 / 无法修复】
 
 ## 修改内容
 [修复代码说明 / 修改行数]
 
 ## 涉及文件
-- 文件 1（完整路径）
-- 文件 2（完整路径）
+[$MODIFIED_FILES 逐行列出]
 
 ## 构建验证结果
 - 构建：【通过/失败】命令：[xxx]
@@ -199,25 +183,24 @@ enabledAutoRun: true
 - Linter：【通过/发现问题】
 
 ## 提交信息
-详见 `./bugfix-flow/$DATE/bugfix-$BUGFIX_ID/commit-msg.txt`
+详见 `commit-msg.txt`
 ```
 
-汇总交付成果向用户展示：
-
+**终端展示**（精简摘要）：
 ```
 ────────────────────────────────────────
  Bug 修复完成：bugfix-$BUGFIX_ID
 
  问题：[问题描述]
  根因：[根因摘要]
- 修改：[修改文件列表]
+ 修改：[$MODIFIED_FILES 个数] 个文件
 
-  报告文件:
-    bugfix-flow/$DATE/bugfix-$BUGFIX_ID/fix-plan.md
-    bugfix-flow/$DATE/bugfix-$BUGFIX_ID/fix-result.md
-    bugfix-flow/$DATE/bugfix-$BUGFIX_ID/commit-msg.txt
+ 报告文件:
+   fix-plan.md      - 修复方案
+   fix-result.md    - 修复结果（含验证记录）
+   commit-msg.txt   - 提交信息 + 修改文件列表
 
- 提交信息已准备，请执行提交操作。
+ 执行 @git-autocommit ./bugfix-flow/$DATE/bugfix-$BUGFIX_ID/commit-msg.txt 提交
 ────────────────────────────────────────
 ```
 
@@ -229,7 +212,7 @@ enabledAutoRun: true
 - **编译验证**：最多重试 2 次
 - **重试策略**：
   1. 首次失败 → 记录错误到 `errors.log`
-  2. 分析错误原因，修正代码
+  2. 分析错误原因，修正代码，将涉及的文件追加到 `$MODIFIED_FILES`（去重）
   3. 重试前询问用户「是否重试（剩余 N 次）或终止」
   4. 重试 2 次均失败 → 上报「多次重试失败，请人工介入」
 - 重试与方案确认是两个独立维度，互不计数
@@ -255,12 +238,14 @@ enabledAutoRun: true
 3. 步骤 4 编译验证最多重试 2 次，超限上报人工介入
 4. 所有报告文件统一保存在 `./bugfix-flow/$DATE/bugfix-$BUGFIX_ID/` 文件夹
 5. 状态文件每次状态变化必须同步更新
-6. 提交信息生成后仅保存到文件，**不自动执行 git commit**，由用户决定提交时机
+6. 提交信息生成后仅保存到文件（含修改文件列表），**不自动执行 git commit**，由用户决定提交时机。`@git-autocommit` 可解析 `commit-msg.txt` 中的提交信息和文件列表，直接完成范围提交
 7. `.coding-dev-state.json` 是流程正确性的关键，每次状态变化必须更新
 
 ## 与 git-autocommit 的配合
 
-本 agent **不自动提交**。提交信息生成后保存至 `commit-msg.txt`，用户可：
-1. 直接使用生成的信息执行 `git commit`
+本 agent **不自动提交**。`commit-msg.txt` 同时包含提交信息和修改文件列表，用户可：
+1. 直接使用 `commit-msg.txt` 中的提交信息执行 `git commit`
 2. 修改后提交
-3. 通过 @git-autocommit 自动提交（需传入 `commit-msg.txt` 路径）
+3. 通过 `@git-autocommit ./bugfix-flow/$DATE/bugfix-$BUGFIX_ID/commit-msg.txt` 自动提交：
+   - `@git-autocommit` 读取 `---` 前的 4 段式提交信息直接使用
+   - 读取 `---` 后 `修改文件列表:` 中的文件路径限定 `git add` 范围
