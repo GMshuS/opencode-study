@@ -1,4 +1,4 @@
-# Node.js 编码规范
+# javascript/tytescript 编码规范
 
 ## 1. 基本风格
 - 使用2空格缩进

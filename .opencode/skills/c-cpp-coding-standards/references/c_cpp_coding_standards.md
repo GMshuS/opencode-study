@@ -1,447 +1,223 @@
 # C/C++ 编码规范完整指南
 
-## 目录
-- [命名规范](#命名规范)
-- [代码格式化](#代码格式化)
-- [代码组织](#代码组织)
-- [内存管理](#内存管理)
-- [错误处理](#错误处理)
-- [注释和文档](#注释和文档)
-- [最佳实践](#最佳实践)
-- [安全检查清单](#安全检查清单)
+## 一、 项目目录结构规范
+合理的项目结构是降低代码耦合度、提升团队协作效率的基础。推荐采用以下标准目录布局：
 
----
+- **`src/`**：存放项目核心源代码（`.cpp` / `.cc`）及对应的头文件（`.h`）。建议按业务模块进一步划分子目录。
+- **`include/`**：存放对外暴露的公共头文件。第三方或外部模块仅需依赖此目录，避免直接引用 `src` 内部实现细节。
+- **`thirdpart/`**：存放第三方依赖库的头文件与预编译二进制文件，保持与项目自身代码的物理隔离。
+- **`docs/`**：存放项目设计文档、API文档（如 Doxygen 生成结果）、架构图及编译运行指南。
+- **`tests/`**：存放单元测试与集成测试代码，确保测试代码与业务代码分离。
+- **`build/`**：构建系统生成的临时文件与可执行文件输出目录，需加入版本控制忽略列表（`.gitignore`）。
 
-## 命名规范
+## 二、 命名规范
+清晰的命名是代码可读性的第一道防线。禁止使用拼音或无意义的缩写，所有标识符应准确表达其业务含义。
 
-### 变量命名
-- 使用小写字母和下划线（snake_case）
-- 变量名应具有描述性
-- 避免使用单个字母（除循环计数器 i、j、k 外）
+1. **类与结构体命名**：采用大驼峰命名法（PascalCase），接口类建议以 `Interface` 或 `I` 作为后缀，其它类名称加`C`前缀。
+   ```cpp
+   //  正确
+   class CNetworkManager { };
+   class ISerializable { };
+
+   //  错误
+   class NetworkManager { };  // 没有C前缀
+   class network_manager { }; // 小写加下划线
+   class Serialize { };       // 缺乏描述性
+   ```
+
+2. **函数命名**：采用大驼峰命名法，动词在前，名词在后。布尔型返回值函数建议使用 `Is`、`Has`、`Can` 等前缀。
+   ```cpp
+   //  正确
+   std::string GetUserInfo(int user_id);
+   bool IsValid() const;
+
+   //  错误
+   void get_user_info();      // 小写下划线
+   bool valid();              // 缺乏动词前缀
+   ```
+
+3. **变量命名**：采用小驼峰命名法（camelCase）。成员变量统一添加下划线后缀 `m_`前缀。
+   ```cpp
+   //  正确
+   int retryCount = 0;        // 局部变量
+   int user_name_;            // 成员变量
+
+   //  错误
+   int RetryCount;            // 大写开头
+   int userName;              // 成员变量缺少后缀，易与参数混淆
+   ```
+
+4. **常量与宏定义**：全大写并使用下划线分隔。C++ 中优先使用 `const` 或 `constexpr` 替代宏定义。
+   ```cpp
+   //  正确
+   constexpr int MAX_BUFFER_SIZE = 1024;
+   #define DEFAULT_TIMEOUT_MS 3000
+
+   //  错误
+   const int maxBufferSize = 1024; // 未遵循全大写规范
+   ```
+
+## 三、 注释规范
+注释的目的是解释“为什么这么做”，而非简单翻译代码逻辑。推荐使用 Doxygen 风格以便自动生成 API 文档。
 
 ```cpp
-// 好
-int user_count;
-double total_price;
+/**
+ * @file data_processor.h
+ * @brief 数据处理器模块，负责解析和校验原始输入流。
+ * @author DevTeam
+ * @date 2024-05-20
+ */
 
-// 不好
-int UC;
-double tp;
-```
-
-### 函数命名
-- 使用 **PascalCase**
-- Getter/Setter 方法：使用 `Get`/`Set` 前缀
-
-```cpp
-class CConfigCenter
+/**
+ * @brief 用户数据管理器，负责处理用户的增删改查。
+ * @note 该类不是线程安全的，多线程环境下需外部加锁。
+ */
+class CUserDataManager 
 {
 public:
-    bool Init();
-    void UnInit();
-    
-    unsigned int GetMaxLenLog() { return m_nMaxLenLog; }
-    unsigned int GetHttpTimeout() { return m_nHttpTimeOut; }
-    const string& GetHttpAddr() { return m_strHttpAddr; }
+    /**
+    * @brief 解析请求参数
+    * @param strUrl [out] URL 输出
+    * @param strReqJson [out] JSON 请求数据输出
+    * @param userObj [in] 用户对象
+    * @return true 成功，false 失败
+    */
+    bool ParseReqParam(string& strUrl, string& strReqJson, 
+        const CDispatchUser& userObj);
 };
-```
 
-### 类命名
-- 使用 **PascalCase**（大驼峰命名法）
-- 类名前必须加 `C` 前缀表示 Class
-
-```cpp
-class CConfigCenter
-class CMessageDispatcher
-class CJyMaMessageDispatcher
-```
-
-### 常量命名
-- 全部大写，使用下划线分隔
-
-```cpp
-const int MAX_BUFFER_SIZE = 1024;
-constexpr double PI = 3.14159;
-```
-
-### 宏命名
-- 全部大写，使用下划线分隔
-- 添加项目前缀避免冲突
-
-```cpp
-#ifndef MYPROJECT_CONFIG_H
-#define MYPROJECT_CONFIG_H
-#endif
-```
-
-### 枚举命名
-- 枚举类型：PascalCase
-- 枚举值：PascalCase 或全大写 + 下划线
-
-```cpp
-enum TRADESTRATEGYERROR
+//  函数内注释：仅解释复杂逻辑或非直觉操作
+int CalculateHash(const std::string& input) 
 {
-    TRADESTRATEGYERROR_BEGIN = 1010000,
-    TRADESTRATEGYERROR_LOGIN,
-    TRADESTRATEGYERROR_END
-};
-```
-
----
-## 代码格式化
-
-### 缩进
-- 使用 **4 个空格** 进行缩进（不使用 Tab）
-- 保持代码对齐一致
-
-```cpp
-class CConfigCenter
-{
-public:
-    CConfigCenter();          // 正确：4 空格缩进
-    virtual ~CConfigCenter();
-    
-    bool Init()
-    {
-        if (condition)        // 正确：8 空格缩进
-        {
-            // 代码块
-        }
-    }
-};
-```
-### 行长限制
-- 建议每行不超过 **120 个字符**
-- 超长字符串应分段拼接
-
-```cpp
-// 错误：行太长
-strUrl = CConfigCenter::GetInstance()->GetHttpAddr() + "?TENANT_ID=" + CConfigCenter::GetInstance()->GetTenantID() + "&TOKEN=" + CConfigCenter::GetInstance()->GetToken();
-
-// 正确：分段拼接
-strUrl = CConfigCenter::GetInstance()->GetHttpAddr();
-strUrl += "?TENANT_ID=" + CConfigCenter::GetInstance()->GetTenantID(); 
-strUrl += "&TOKEN=" + CConfigCenter::GetInstance()->GetToken();  
-strUrl += "&SERVICE=" + strService;
-```
-
-### `{`与`}`单独成行
-- 函数、类、条件语句等的`{`与`}`应单独成行
-
-```cpp
-// 错误
-if (condition) {
-    // 代码块
-}
-
-// 正确
-if (condition)
-{
-    // 代码块
+    // TODO: 张三@company.com - 当前哈希算法性能较差，后续需替换为SHA-256
+    return fast_hash(input.c_str()); 
 }
 ```
 
----
+## 四、 头文件包含顺序
+标准化的包含顺序有助于快速定位依赖来源，不同分组之间必须使用空行分隔：
 
-## 代码组织
-
-### 项目目录结构
-
-注意：**存量项目已经有项目结构时无需遵守此规范，按照已有项目结构组织代码**
-
-项目目录结构示例：
-```
-project/
-├── APP1/                           # 应用模块1
-│   ├── include/                    # 应用模块1的头文件目录
-│   ├── src/                        # 应用模块1的源文件目录
-│   ├── CMakeLists.txt/             # 应用模块1的 CMake 构建文件
-├── APP2/                           # 应用模块2
-│   ├── include/                    # 应用模块2的头文件目录
-│   ├── src/                        # 应用模块2的源文件目录
-│   ├── Libs/                       # 应用模块2的私有库文件目录
-│   ├── CMakeLists.txt/             # 应用模块2的 CMake 构建文件
-├── Script/                         # 脚本文件目录（sql、bat、shell等）
-│   ├── APP2/                       # 应用模块2的脚本
-│   ├── APP1/                       # 应用模块1的脚本
-├── Bin/                            # 应用模块编译输出可执行文件目录
-│   ├── libs_linux_debug/           # 应用模块的公共库文件目录（调试版本）
-│   ├── libs_linux_release/         # 应用模块的公共库文件目录（发布版本）
-│   ├── linux_debug/                # linux应用模块编译输出可执行文件目录（debug版本）
-│   │   ├── config/                 # 应用模块依赖的配置文件目录
-│   ├── linux_release/              # linux应用模块编译输出可执行文件目录（release版本）
-│   │   ├── config/                 # 应用模块依赖的配置文件目录
-│   └── win_debug/                  # windows应用模块编译输出可执行文件目录（debug版本）
-│   │   ├── config/                 # 应用模块依赖的配置文件目录
-│   └── win_release/                # windows应用模块编译输出可执行文件目录（release版本）
-│   │   ├── config/                 # 应用模块依赖的配置文件目录
-│   └── script/                     # 应用管理脚本文件目录（bat、shell等，用于启动、停止、重启应用模块）
-├── Libs/                           # 公共库文件目录
-│   ├── Common/                     # Common公共库
-│   └── ├── include/                # Common公共库头文件目录
-│   └── ├── src/                    # Common公共库源文件目录
-│   ├── Json/                       # Json公共库
-│   │   ├── include/                # Json公共库头文件目录
-│   │   ├── src/                    # Json公共库源文件目录
-│   │   ├── lib/                    # Json公共库文件目录
-│   │   │   ├── win32/              # Json公共库文件目录（win32）
-│   │   │   ├── win64/              # Json公共库文件目录（win64）
-│   ├── TinyXml/                    # TinyXml公共库
-│   │   ├── include/                # TinyXml公共库头文件目录
-│   │   ├── src/                    # TinyXml公共库源文件目录
-│   │   ├── lib/                    # TinyXml公共库文件目录
-│   │   │   ├── win32/              # TinyXml公共库文件目录（win32）
-│   │   │   ├── win64/              # TinyXml公共库文件目录（win64）
-```
-
-### 头文件保护
 ```cpp
-// 推荐使用 #pragma once（现代编译器）
-#pragma once
+#include "data_processor.h"      // 1. 本类/本模块对应头文件
 
-// 或使用传统宏保护
-#ifndef MODULE_NAME_H
-#define MODULE_NAME_H
-#endif
-```
-
-### 包含顺序
-```cpp
-// 1. 对应的头文件
-// 2. 标准库
-// 3. 第三方库
-// 4. 项目内部头文件
-
-#include "module_name.h"
-#include <iostream>
+#include <iostream>              // 2. C/C++ 标准库头文件
 #include <vector>
-#include <boost/algorithm/string.hpp>
-#include "other_module.h"
+#include <string>
+
+#include <boost/asio.hpp>        // 3. 第三方/系统级库头文件
+#include <sys/types.h>
+
+#include "utils/logger.h"        // 4. 项目内部头文件
+#include "network/socket.h"
 ```
+*强制要求*：头文件中严禁使用 `using namespace xxx;`，必须显式指定命名空间前缀（如 `std::string`）。所有头文件必须使用 `#pragma once` 防止多重包含。
 
----
+## 五、 接口与变量暴露规则
+遵循最小权限原则，严格控制作用域与访问级别，降低模块间的紧耦合。
 
-## 内存管理
-
-### C++ 优先使用智能指针
 ```cpp
-// 推荐
-std::unique_ptr<Resource> ptr = std::make_unique<Resource>();
-std::shared_ptr<Data> data = std::make_shared<Data>();
+//  正确：严格限制访问权限，优先使用 private
+class CDatabaseConnection 
+{
+private:
+    std::string connection_string_; // 私有成员变量
+    void InternalValidate();        // 私有辅助函数
 
-// 不推荐
-Resource* ptr = new Resource();
-delete ptr;
-```
+protected:
+    virtual void OnConnect();       // 仅在确实需要子类扩展时使用 protected
 
-### RAII 原则
-```cpp
-class FileHandler
+public:
+    bool Connect();                 // 仅对外暴露必要的公开接口
+};
+
+//  错误：滥用 public，破坏封装性
+class CBadConnection 
 {
 public:
-    FileHandler(const std::string& path) : file_(std::fopen(path.c_str(), "r")) {}
-    ~FileHandler() { if (file_) std::fclose(file_); }
-    
-private:
-    FILE* file_;
+    std::string connStr;            // 数据直接暴露
+    void validate();                // 内部逻辑被暴露
 };
 ```
 
-### C 语言内存管理
-```c
-// 分配后立即检查
-void* ptr = malloc(size);
-if (ptr == NULL)
+## 六、 代码格式规范
+统一的排版风格能显著降低代码审查的认知负荷。
+
+1. **大括号风格（Allman）**：左大括号 `{` 与右大括号 `}` 均独立成行。
+2. **空格与留白**：关键字后加空格，运算符前后加空格。
+3. **行长限制**：建议每行不超过 **120 个字符**，超长应换行显示。
+
+```cpp
+//  正确的格式示例
+if (userCount > 0) 
 {
-    // 错误处理
-    return;
+    for (size_t i = 0; i < userCount; ++i) 
+    {
+        ProcessUser(users[i]);
+    }
+}
+else 
+{
+    LogWarning("No users found");
 }
 
-// 确保每个 malloc 都有对应的 free
-free(ptr);
-ptr = NULL;  // 避免悬空指针
+//  错误的格式示例
+if(userCount>0){                  // 关键字后缺空格，大括号未换行
+    for(size_t i=0;i<userCount;++i){ // 运算符前后缺空格
+        ProcessUser(users[i]);}
+}else{                            // else 未换行
+    LogWarning("No users found");}
 ```
 
----
+## 七、 补充核心工程规范
+为确保代码的健壮性与安全性，特补充以下关键规则及示例：
 
-## 错误处理
+1. **内存与资源管理（RAII）**：现代 C++ 严禁裸指针手动 `new/delete`。
+   ```cpp
+   //  正确：使用智能指针自动管理内存
+   auto buffer = std::make_unique<char[]>(MAX_BUFFER_SIZE);
+   
+   //  错误：手动管理内存，极易导致内存泄漏
+   char* buffer = new char[MAX_BUFFER_SIZE];
+   delete[] buffer; 
+   ```
 
-### C++ 异常处理
-```cpp
-// 使用标准异常
-throw std::invalid_argument("Invalid argument");
-throw std::runtime_error("Runtime error");
+2. **构造函数职责分离**：构造函数仅做轻量级初始化，复杂或可能失败的操作抽取至 `Init()`。
+   ```cpp
+   //  正确
+   class CFileHandler 
+   {
+   public:
+       explicit CFileHandler(const std::string& path) : file_path_(path) {}
+       
+       bool Init() 
+       {
+           // I/O 操作放在这里，失败可以安全返回 false
+           return OpenFile(file_path_); 
+       }
+   private:
+       std::string file_path_;
+   };
 
-// 异常安全的函数
-void process() noexcept;  // 不抛出异常
-```
+   //  错误：在构造函数中进行复杂的 I/O 操作
+   CFileHandler::CFileHandler(const std::string& path) 
+   {
+       if (!OpenFile(path)) throw std::runtime_error("Failed"); // 构造中抛异常极其危险
+   }
+   ```
 
-### C 语言错误码
-```c
-// 返回错误码
-int result = function();
-if (result != 0)
-{
-    // 错误处理
-}
+3. **防御性编程与消除魔法数字**：
+   ```cpp
+   //  正确：具名常量 + 边界检查
+   constexpr size_t MAX_RETRY_COUNT = 3;
+   if (retryCount < MAX_RETRY_COUNT && ptr != nullptr) 
+   {
+       SafeExecute(ptr);
+   }
 
-// 或使用 errno
-#include <errno.h>
-if (errno != 0)
-{
-    perror("Error");
-}
-```
+   //  错误：魔法数字 + 盲目解引用
+   if (retryCount < 3) 
+   {
+       ptr->Execute(); // 未检查空指针，极易崩溃
+   }
+   ```
 
----
-
-## 代码注释
-
-### 文件头注释
-每个源文件开头应包含简要说明（当前项目中较少，建议添加）
-
-```cpp
-/**
- * @file ConfigCenter.cpp
- * @brief 配置中心实现
- * @author YourName
- * @date 2026/03/10
- */
-```
-
-### 类注释
-类定义前应有功能说明
-
-```cpp
-// 配置中心类 - 负责加载和管理配置文件
-class CConfigCenter
-{
-    // ...
-};
-```
-
-### 函数注释
-复杂函数应说明功能、参数和返回值
-
-```cpp
-/**
- * @brief 解析请求参数
- * @param strUrl [out] URL 输出
- * @param strReqJson [out] JSON 请求数据输出
- * @param userObj [in] 用户对象
- * @return true 成功，false 失败
- */
-bool ParseReqParam(string& strUrl, string& strReqJson, 
-                   const CDispatchUser& userObj);
-```
-
-### 行内注释
-- 使用 `//` 进行单行注释
-- 注释前留一个空格
-- 解释"为什么"而不是"是什么"
-
-```cpp
-// 正确：解释原因
-if (atoi(szSubMode) != -1)  // -1 表示禁用模式
-{
-    // 启动推送 Worker
-}
-```
-
-### TODO/FIXME 注释
-使用标准标记标注待办事项
-
-```cpp
-// TODO: 优化日志记录性能
-// FIXME: 此处可能存在内存泄漏
-// NOTE: 注意配置文件的编码格式
-```
-
----
-
-## 最佳实践
-
-### const 正确性
-```cpp
-// 参数
-void process(const Data& data);
-
-// 成员函数
-int getValue() const;
-
-// 指针
-const int* ptr;      // 指向常量的指针
-int* const ptr;      // 常量指针
-const int* const ptr; // 指向常量的常量指针
-```
-
-### 引用优于指针（C++）
-```cpp
-// 推荐
-void process(Data& data);
-
-// 不推荐
-void process(Data* data);
-```
-
-### 使用 auto（C++11+）
-```cpp
-// 推荐：类型明显时
-auto it = vec.begin();
-auto ptr = std::make_unique<Resource>();
-
-// 不推荐：类型不明显时
-auto result = complexFunction();  // 应该显式声明类型
-```
-
-### 避免魔法数字
-```cpp
-// 不好
-if (status == 3) { ... }
-
-// 好
-constexpr int STATUS_READY = 3;
-if (status == STATUS_READY) { ... }
-```
-
----
-
-## 安全检查清单
-
-### 代码审查清单
-- [ ] 变量命名是否有意义且符合规范
-- [ ] 函数是否单一职责
-- [ ] 是否有内存泄漏风险
-- [ ] 错误处理是否完整
-- [ ] 是否有必要的注释
-- [ ] 是否使用了适当的容器和算法
-- [ ] 是否有潜在的未定义行为
-
-### 常见安全问题
-- [ ] 缓冲区溢出检查
-- [ ] 整数溢出检查
-- [ ] 空指针检查
-- [ ] 资源泄漏检查
-- [ ] 竞态条件检查
-
-### 性能检查
-- [ ] 避免不必要的拷贝（使用 const 引用）
-- [ ] 使用移动语义（C++11+）
-- [ ] 预分配容器大小
-- [ ] 避免在循环中重复计算
-
----
-
-## 工具推荐
-
-### 静态分析
-- clang-tidy
-- cppcheck
-
-### 格式化
-- clang-format
-- astyle
-
-### 构建系统
-- Visual Studio（推荐）
-- CMake
