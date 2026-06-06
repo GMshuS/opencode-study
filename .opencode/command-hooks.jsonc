@@ -1,0 +1,17 @@
+{
+  "tool": [
+    {
+      "id": "lint-after-edit",
+      "when": { "phase": "after", "tool": "edit" },
+      "run": ["npm run lint"],
+      "inject": "Lint result: `{stdout}`"
+    }
+  ],
+  "session": [
+    {
+      "id": "notify-on-idle",
+      "when": { "event": "session.idle" },
+      "run": "echo session idle"
+    }
+  ]
+}

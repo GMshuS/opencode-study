@@ -7,7 +7,9 @@
     "验证成功后再告知用户任务完成。",
     "不要假设代码能正常工作，必须实际运行验证。"
   ],
-  "plugin": [],
+  "plugin": [
+    "opencode-notify"
+  ],
   "experimental": {
     "batch_tool": true,
     "openTelemetry": false,

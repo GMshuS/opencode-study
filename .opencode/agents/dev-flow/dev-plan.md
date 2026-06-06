@@ -33,7 +33,7 @@ tools:
    - `setup.py` / `pyproject.toml` / `requirements.txt` → Python → 加载 `@python-coding-standards`
    - `go.mod` → Go → 加载 `@go-coding-standards`
    - `CMakeLists.txt` / `Makefile` / `*.sln` → C/C++ → 加载 `@c-cpp-coding-standards`
- 3. 多语言项目加载所有对应技能
+3. 多语言项目加载所有对应技能
 4. 基于现有结构做规划，避免与已有代码冲突
 
 ## 步骤2：需求分析与规划

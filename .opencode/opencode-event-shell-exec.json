@@ -1,0 +1,5 @@
+{
+  "session.idle": [
+    "powershell -Command \"$wshell = New-Object -ComObject Wscript.Shell; $wshell.Popup('Session completed', 0, 'OpenCode', 0x0)\""
+  ]
+}

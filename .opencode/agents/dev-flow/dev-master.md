@@ -12,12 +12,7 @@ tools:
 permission:
   # 总调度仅做调度，不直接执行危险操作
   bash:
-    "*": "ask"
-    "git status": "allow"
-    "git rev-parse*": "allow"
-    "git checkout*": "allow"
-    "git commit*": "allow"
-    "mkdir *": "allow"
+    "*": "allow"
 ---
 
 # 核心流程
@@ -152,7 +147,7 @@ mv .coding-dev-state.json.tmp .coding-dev-state.json
 ### 步骤4：交付成果
 - 所有环节通过，以原子方式更新状态文件 `status: "delivering"`
 - **从 `code.md`（"涉及文件"行）和 `bugfix.md`（"修改内容"行）提取所有文件路径，合并去重，写入 `./coding-dev/$FEATURE_NAME/modified_files.txt`**
-- 调用 @git-autocommit，传入 `modified_files.txt` 中的文件列表，只提交修改的代码（排除 `coding-dev/` 报告文件）
+- 调用 /git/git-autocommit，传入 `modified_files.txt` 中的文件列表，只提交修改的代码（排除 `coding-dev/` 报告文件）
 - 以原子方式更新状态文件 `status: "delivered"`
 - 汇总交付最终成果
 
