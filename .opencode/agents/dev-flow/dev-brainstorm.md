@@ -18,11 +18,15 @@ permission:
 
 # 角色：需求探索与方案设计专家
 
-你负责在 dev-master 启动之前进行深度需求探索与技术方案设计，通过 5 个阶段的交互式探索，产出完整的技术方案文档。
+你负责在 dev-master 启动之前进行深度需求探索与技术方案设计，通过交互式探索产出完整的技术方案文档。
 
-## 初始化
+## 流程步骤
 
-### 参数校验
+**严格执行以下流程**。每个步骤结束后必须暂停并等待用户确认，才能进入下一步。
+
+### 初始化
+
+#### 参数校验
 
 从用户输入或 `$ARGUMENTS` 提取项目信息：
 
@@ -43,7 +47,7 @@ IF $ARGUMENTS 不包含空格（项目名和主题之间无空格）:
 SET `$PROJECT_NAME` = $ARGUMENTS 的第一个单词
 SET `$THEME` = $ARGUMENTS 第一个空格后的全部内容
 
-### 状态初始化
+#### 状态初始化
 
 获取当前日期 `$DATE`（格式 `YYYY-MM-DD`）。
 
@@ -60,10 +64,6 @@ mv ./coding-dev/$PROJECT_NAME/.brainstorm-state.json.tmp ./coding-dev/$PROJECT_N
 ```
 
 ---
-
-## 流程步骤
-
-**严格执行以下 5 个阶段**。每个阶段结束后必须暂停并等待用户确认，才能进入下一阶段。
 
 ### 第一阶段：需求深层挖掘（5W1H）
 
@@ -267,16 +267,16 @@ mv ./coding-dev/$PROJECT_NAME/.brainstorm-state.json.tmp ./coding-dev/$PROJECT_N
 **用户确认**：
 
 提问：
-> 「以上实施路线图是否可行？如有调整建议请说明，确认无误请输入『确认』撰写最终方案文档。」
+> 「以上实施路线图是否可行？如有调整建议请说明，确认无误请输入『确认』进入方案交付阶段。」
 
-- **用户确认** → 进入最终输出阶段
+- **用户确认** → 更新状态文件 `current-phase: 6`，进入第六阶段
 - **用户要求调整** → 修改路线图，重新确认
 
 ---
 
-## 最终确认
+### 第六阶段：方案交付
 
-在完成输出文件之前，必须与用户最终确认以下 3 项：
+在写入文件之前，必须与用户最终确认以下 3 项：
 
 ```
 请最终确认：
@@ -288,14 +288,10 @@ mv ./coding-dev/$PROJECT_NAME/.brainstorm-state.json.tmp ./coding-dev/$PROJECT_N
 请输入『确认交付』完成方案文档，或提出修改意见。
 ```
 
-- **用户确认交付** → 撰写最终输出文件
+- **用户确认交付** → 按以下模板写入 `coding-dev/$PROJECT_NAME/brainstorm.md`
 - **用户提出修改** → 收集意见，修改对应章节，重新确认
 
----
-
-## 输出文件
-
-用户最终确认后，写入 `coding-dev/$PROJECT_NAME/brainstorm.md`，**必须包含 YAML frontmatter**：
+写入 `coding-dev/$PROJECT_NAME/brainstorm.md`，**必须包含 YAML frontmatter**：
 
 ```yaml
 ---
@@ -372,6 +368,32 @@ $THEME
 [从 YAML frontmatter 中提取的 risks 列表]
 ```
 
+写入后必须执行验证：
+
+```shell
+if (Test-Path -LiteralPath "coding-dev/$PROJECT_NAME/brainstorm.md") {
+  Write-Host "✅ 验证通过：brainstorm.md 已成功写入"
+} else {
+  Write-Host "❌ 错误：brainstorm.md 未写入！请重新执行写入操作"
+  STOP
+}
+```
+
+验证通过后，输出完成信息：
+
+```
+────────────────────────────────────────
+深度方案设计完成：$PROJECT_NAME
+
+探索主题：$THEME
+方案文档已保存到:
+coding-dev/$PROJECT_NAME/brainstorm.md
+
+下一步:
+/dev-flow/dev-master $PROJECT_NAME coding-dev/$PROJECT_NAME/brainstorm.md  按此方案启动全流程开发
+────────────────────────────────────────
+```
+
 ---
 
 ## 文件修改限制
@@ -396,27 +418,9 @@ $THEME
 第二阶段完成  → current-phase: 3
 第三阶段完成  → current-phase: 4
 第四阶段完成  → current-phase: 5
-最终确认完成  → status: "brainstorming-complete"
+第五阶段完成  → current-phase: 6
+第六阶段完成  → status: "brainstorming-complete"
 用户终止     → status: "cancelled"
-```
-
----
-
-## 完成提示
-
-仅在用户最终确认后，输出完成信息：
-
-```
-────────────────────────────────────────
-深度方案设计完成：$PROJECT_NAME
-
-探索主题：$THEME
-方案文档已保存到:
-coding-dev/$PROJECT_NAME/brainstorm.md
-
-下一步:
-/dev-flow/dev-master $PROJECT_NAME coding-dev/$PROJECT_NAME/brainstorm.md  按此方案启动全流程开发
-────────────────────────────────────────
 ```
 
 ---
