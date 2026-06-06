@@ -132,75 +132,53 @@ $MODIFIED_FILES = []
 
 ---
 
-### 步骤 4：生成提交信息
+### 步骤 4：生成交付文档
 
-根据本次修改的内容，严格按照以下格式生成提交信息：
+生成 4 段式提交信息并汇总交付文档：
 
-```text
-问题来源：【问题的来源与描述】
-问题原因：【问题产生的原因】
-修改说明：【修改的方法以及修改点】
-测试建议：【对修改给出测试建议，涵盖修改点】
-```
+1. 根据修改内容生成提交信息（问题来源 / 问题原因 / 修改说明 / 测试建议）
+2. 将提交信息与 `$MODIFIED_FILES` 合并写入 `./bugfix-flow/$DATE/bugfix-$BUGFIX_ID/commit-msg.txt`
+3. 更新状态文件 `status: "delivered"`
+4. 写入 `./bugfix-flow/$DATE/bugfix-$BUGFIX_ID/fix-result.md`，内容要求如下：
+   ```markdown
+   # Bug 修复结果
 
-将提交信息和修改文件列表合并写入 `./bugfix-flow/$DATE/bugfix-$BUGFIX_ID/commit-msg.txt`：
+   ## 修复摘要
+   - **问题**：[问题描述]
+   - **根因**：[根因摘要]
+   - **状态**：【已修复 / 部分修复 / 无法修复】
 
-```text
-[4段式提交信息]
----
-修改文件列表:
-[$MODIFIED_FILES 逐行输出]
-```
+   ## 修改内容
+   [修复代码说明 / 修改行数]
 
----
+   ## 涉及文件
+   [$MODIFIED_FILES 逐行列出]
 
-### 步骤 5：总结交付
+   ## 构建验证结果
+   - 构建：【通过/失败】命令：[xxx]
+   - 类型检查：【通过/失败/跳过】
+   - Linter：【通过/发现问题】
 
-更新状态文件 `status: "delivered"`。
+   ## 提交信息
+   详见 `commit-msg.txt`
+   ```
+5. 终端展示精简摘要：
+   ```
+   ────────────────────────────────────────
+    Bug 修复完成：bugfix-$BUGFIX_ID
 
-**输出文件**：`./bugfix-flow/$DATE/bugfix-$BUGFIX_ID/fix-result.md`
+    问题：[问题描述]
+    根因：[根因摘要]
+    修改：[$MODIFIED_FILES 个数] 个文件
 
-**fix-result.md 内容要求**：
-```markdown
-# Bug 修复结果
+    报告文件:
+      fix-plan.md      - 修复方案
+      fix-result.md    - 修复结果（含验证记录）
+      commit-msg.txt   - 提交信息 + 修改文件列表
 
-## 修复摘要
-- **问题**：[问题描述]
-- **根因**：[根因摘要]
-- **状态**：【已修复 / 部分修复 / 无法修复】
-
-## 修改内容
-[修复代码说明 / 修改行数]
-
-## 涉及文件
-[$MODIFIED_FILES 逐行列出]
-
-## 构建验证结果
-- 构建：【通过/失败】命令：[xxx]
-- 类型检查：【通过/失败/跳过】
-- Linter：【通过/发现问题】
-
-## 提交信息
-详见 `commit-msg.txt`
-```
-
-**终端展示**（精简摘要）：
-```
-────────────────────────────────────────
- Bug 修复完成：bugfix-$BUGFIX_ID
-
- 问题：[问题描述]
- 根因：[根因摘要]
- 修改：[$MODIFIED_FILES 个数] 个文件
-
- 报告文件:
-   fix-plan.md      - 修复方案
-   fix-result.md    - 修复结果（含验证记录）
-   commit-msg.txt   - 提交信息 + 修改文件列表
-
- 执行 @git-autocommit ./bugfix-flow/$DATE/bugfix-$BUGFIX_ID/commit-msg.txt 提交
-────────────────────────────────────────
-```
+    执行 @git-autocommit ./bugfix-flow/$DATE/bugfix-$BUGFIX_ID/commit-msg.txt 提交
+   ────────────────────────────────────────
+   ```
 
 ---
 
