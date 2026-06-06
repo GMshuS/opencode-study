@@ -16,7 +16,7 @@ enabledAutoRun: true
 ### 从 plan.md 读取上下文
 1. **先读取** `./coding-dev/$FEATURE_NAME/plan.md` 获取：
    - 语言/框架/版本
-   - 已加载编码规范名（如 `javascript-coding-standards`）
+   - 已加载编码规范（如 `javascript-coding-standards`）
    - 架构设计方案
    - 当前批次任务清单及验收条件
    - 关键约束

@@ -57,7 +57,7 @@ permission:
 
 专注 BUG 修复，遵循标准调试流程：
 
-## 步骤1：上下文收集
+## 步骤1：语言探测与上下文读取
 1. **从文件读取上下文**：
    - 读取 `./coding-dev/$FEATURE_NAME/review.md` 获取问题清单、涉及文件、报错信息
    - 读取 `./coding-dev/$FEATURE_NAME/plan.md` 获取技术方案上下文

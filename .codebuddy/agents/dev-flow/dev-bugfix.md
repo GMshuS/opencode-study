@@ -11,7 +11,7 @@ enabledAutoRun: true
 
 专注 BUG 修复，遵循标准调试流程：
 
-## 步骤1：上下文收集
+## 步骤1：语言探测与上下文读取
 1. **从文件读取上下文**：
    - 读取 `./coding-dev/$FEATURE_NAME/review.md` 获取问题清单、涉及文件、报错信息
    - 读取 `./coding-dev/$FEATURE_NAME/plan.md` 获取技术方案上下文
@@ -59,7 +59,7 @@ enabledAutoRun: true
 
 修复完成后，执行快速编译确认修复没有破坏编译：
 
-1. 根据项目语言执行对应的编译/构建命令（参照 `auto-verify-code` 策略）
+1. 根据项目语言执行对应的编译/构建命令（参照 `auto-verify-code` skill 的策略）
 2. **要求**：编译通过（退出码=0）
 3. **如编译失败** → 返回步骤 4 重新修复
 4. **不执行**完整的类型检查、Linter 检查（这些由 @dev-review 在审查环节执行）

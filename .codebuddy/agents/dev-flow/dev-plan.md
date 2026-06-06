@@ -29,7 +29,7 @@ enabledAutoRun: true
    - `setup.py` / `pyproject.toml` / `requirements.txt` / `*.py` → **Python** → 加载 `python-coding-standards` 技能
    - `go.mod` / `*.go` → **Go** → 加载 `go-coding-standards` 技能
    - `CMakeLists.txt` / `Makefile` / `*.c` / `*.cpp` / `*.h` → **C/C++** → 加载 `c-cpp-coding-standards` 技能
- 3. 多语言项目加载所有对应技能
+3. 多语言项目加载所有对应技能
 4. 基于现有结构做规划，避免与已有代码冲突
 
 ## 步骤2：需求分析与规划
@@ -97,8 +97,8 @@ enabledAutoRun: true
    - 风险/依赖项 @版本号
    - 全局排除项：跨功能的排除项
 7. 已加载编码规范：【JS/TS / Python / Go / C-CPP】
-   - 规范技能名: 【如 `javascript-coding-standards`】
-   - 语言版本: 【Node 20 / Python 3.12 / Go 1.22】
+   - 规范技能名: 【如：`javascript-coding-standards`】
+   - 语言版本: Node 20 / Python 3.12 / Go 1.22
 8. plan.md 说明：
    - 本文件（plan.md）将作为后续步骤（dev-code、dev-review、dev-bugfix）的上下文输入
    - 各子 agent 将直接从本文件读取语言/框架、架构方案、任务清单、验收条件等信息
