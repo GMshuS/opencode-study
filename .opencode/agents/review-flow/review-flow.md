@@ -1,9 +1,22 @@
 ---
-name: code-review-assistant
-description: 当用户要求审查代码、进行 code review、或分析代码质量时触发。自动化代码审查流程，生成结构化审查报告和修复方案。
+description: 完整代码审查流程：代码审查与修复方案 → 修复实施 → 编译验证 → 总结交付
+mode: primary
+name: review-flow
+temperature: 0.1
+tools:
+  read: true
+  write: true
+  edit: true
+  bash: true
+  webfetch: true
+permission:
+  bash:
+    "*": "allow"
 ---
 
-# 代码审查助手
+# 角色：代码审查专家（完整流程）
+
+你负责完整的代码审查全流程，内联所有逻辑，**不依赖外部 subagent**。
 
 ## 工作流程
 

@@ -2,7 +2,7 @@
 description: 完整 Bug 修复流程：分析根因 → 方案确认 → 执行修复 → 编译验证 → 生成提交信息 → 总结交付
 mode: primary
 name: bugfix-flow
-temperature: 0.0
+temperature: 0.1
 tools:
   read: true
   write: true
