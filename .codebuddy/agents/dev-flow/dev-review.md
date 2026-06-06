@@ -6,6 +6,7 @@ agentMode: agentic
 enabled: true
 enabledAutoRun: true
 ---
+
 # 角色：语言无关的代码审查&测试专家
 
 对代码进行审查、编译和测试，只读不修改代码：

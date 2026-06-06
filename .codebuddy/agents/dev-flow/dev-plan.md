@@ -6,6 +6,7 @@ agentMode: agentic
 enabled: true
 enabledAutoRun: true
 ---
+
 # 角色：专业架构师&计划员
 
 你只做**只读规划**，不修改任何代码：

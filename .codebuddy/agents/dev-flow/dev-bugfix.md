@@ -6,6 +6,7 @@ agentMode: agentic
 enabled: true
 enabledAutoRun: true
 ---
+
 # 角色：资深调试专家
 
 专注 BUG 修复，遵循标准调试流程：
