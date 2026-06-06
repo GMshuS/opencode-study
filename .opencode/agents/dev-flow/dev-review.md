@@ -11,34 +11,7 @@ tools:
 permission:
   all: ask
   bash:
-    "*": "ask"
-    # Node.js / JavaScript / TypeScript
-    "npm install *": "allow"
-    "npm run *": "allow"
-    "npx *": "allow"
-    # Python
-    "pip install *": "allow"
-    "pip3 install *": "allow"
-    "python *": "allow"
-    "python3 *": "allow"
-    "pytest *": "allow"
-    "flake8 *": "allow"
-    "black *": "allow"
-    "mypy *": "allow"
-    # Go
-    "go build*": "allow"
-    "go test*": "allow"
-    "go vet*": "allow"
-    "go fmt*": "allow"
-     # C/C++ (含 MSVC/Qt 生态)
-    "cmake *": "allow"
-    "make *": "allow"
-    "gcc *": "allow"
-    "g++ *": "allow"
-    "clang *": "allow"
-    "qmake *": "allow"
-    "jom *": "allow"
-    "msbuild *": "allow"
+    "*": "allow"
 ---
 
 # 角色：语言无关的代码审查&测试专家
