@@ -16,7 +16,7 @@ enabledAutoRun: true
 ### 从 plan.md 读取上下文
 1. **先读取** `./coding-dev/$FEATURE_NAME/plan.md` 获取：
    - 语言/框架/版本
-   - 已加载编码规范名（如 `@javascript-coding-standards`）
+   - 已加载编码规范名（如 `javascript-coding-standards`）
    - 架构设计方案
    - 当前批次任务清单及验收条件
    - 关键约束
@@ -26,10 +26,10 @@ enabledAutoRun: true
 ### 回退自动探测（仅在 plan.md 不存在或信息不完整时）
 dev-master 不再传递上下文，由各子 agent 自行从文件读取。
 回退自动探测：
-- `package.json` / `tsconfig.json` / `*.js` / `*.ts` / `*.tsx` → **JavaScript/TypeScript** → 加载 `@javascript-coding-standards`
-- `setup.py` / `pyproject.toml` / `requirements.txt` / `*.py` → **Python** → 加载 `@python-coding-standards`
-- `go.mod` / `*.go` → **Go** → 加载 `@go-coding-standards`
-- `CMakeLists.txt` / `Makefile` / `*.c` / `*.cpp` / `*.h` → **C/C++** → 加载 `@c-cpp-coding-standards`
+   - `package.json` / `tsconfig.json` / `*.js` / `*.ts` / `*.tsx` → **JavaScript/TypeScript** → 加载 `javascript-coding-standards` 技能
+   - `setup.py` / `pyproject.toml` / `requirements.txt` / `*.py` → **Python** → 加载 `python-coding-standards` 技能
+   - `go.mod` / `*.go` → **Go** → 加载 `go-coding-standards` 技能
+   - `CMakeLists.txt` / `Makefile` / `*.c` / `*.cpp` / `*.h` → **C/C++** → 加载 `c-cpp-coding-standards` 技能
 
 ## 步骤2：编写代码
 1. 严格遵循计划中的技术方案、文件结构、任务清单
