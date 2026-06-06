@@ -13,7 +13,7 @@
 ## 二、 命名规范
 清晰的命名是代码可读性的第一道防线。禁止使用拼音或无意义的缩写，所有标识符应准确表达其业务含义。
 
-1. **类与结构体命名**：采用大驼峰命名法（PascalCase），接口类建议以 `Interface` 或 `I` 作为后缀，其它类名称加`C`前缀。
+1. **类命名**：采用大驼峰命名法（PascalCase），接口类建议以 `Interface` 或 `I` 作为前缀，其它类名称加`C`前缀。
    ```cpp
    //  正确
    class CNetworkManager { };
@@ -25,7 +25,17 @@
    class Serialize { };       // 缺乏描述性
    ```
 
-2. **函数命名**：采用大驼峰命名法，动词在前，名词在后。布尔型返回值函数建议使用 `Is`、`Has`、`Can` 等前缀。
+2. **结构体命名**：采用大驼峰命名法（PascalCase），名称加`T`前缀。
+   ```cpp
+   //  正确
+   struct TNetworkManager { };
+
+   //  错误
+   struct NetworkManager { };  // 没有C前缀
+   struct network_manager { }; // 小写加下划线
+   ```
+
+3. **函数命名**：采用大驼峰命名法，动词在前，名词在后。布尔型返回值函数建议使用 `Is`、`Has`、`Can` 等前缀。
    ```cpp
    //  正确
    std::string GetUserInfo(int user_id);
@@ -36,7 +46,7 @@
    bool valid();              // 缺乏动词前缀
    ```
 
-3. **变量命名**：采用小驼峰命名法（camelCase）。成员变量统一添加下划线后缀 `m_`前缀。
+4. **变量命名**：采用小驼峰命名法（camelCase）。成员变量统一添加下划线后缀 `m_`前缀。
    ```cpp
    //  正确
    int retryCount = 0;        // 局部变量
@@ -47,7 +57,7 @@
    int userName;              // 成员变量缺少后缀，易与参数混淆
    ```
 
-4. **常量与宏定义**：全大写并使用下划线分隔。C++ 中优先使用 `const` 或 `constexpr` 替代宏定义。
+5. **常量与宏定义**：全大写并使用下划线分隔。C++ 中优先使用 `const` 或 `constexpr` 替代宏定义。
    ```cpp
    //  正确
    constexpr int MAX_BUFFER_SIZE = 1024;
