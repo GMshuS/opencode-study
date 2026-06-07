@@ -24,17 +24,25 @@ tools:
    - **原则**：基于已有计划和修改意见进行修正，非修改部分保持不变，避免破坏已确认的内容
 3. **若不存在（首次规划）**：
    - 跳过步骤0，直接执行步骤1的完整项目现状分析
+   a. **若 prompt 中包含 brainstorm_path**：
+      - 读取 `brainstorm_path` 指向的 brainstorm.md 文件
+      - 解析 YAML frontmatter 获取 `key-decisions`、`risks` 等结构化字段
+      - 从正文提取：需求描述、架构方案、接口协议、实施路线图、风险分析
+      - 将上述内容合并到用户需求中，作为规划依据
+   b. **若未提供 brainstorm_path**：
+      - 直接使用原始用户需求进行规划
 
 ## 步骤1：项目现状分析
 先理解现有项目，再提出规划方案：
-1. 使用 `glob` / `read` 查看项目根目录结构，识别现有文件
-2. 扫描关键配置文件确定语言/框架：
-   - `package.json` / `tsconfig.json` / `*.js` / `*.ts` / `*.tsx` → **JavaScript/TypeScript** → 加载 `javascript-coding-standards` 技能
-   - `setup.py` / `pyproject.toml` / `requirements.txt` / `*.py` → **Python** → 加载 `python-coding-standards` 技能
-   - `go.mod` / `*.go` → **Go** → 加载 `go-coding-standards` 技能
-   - `CMakeLists.txt` / `Makefile` / `*.c` / `*.cpp` / `*.h` → **C/C++** → 加载 `c-cpp-coding-standards` 技能
-3. 多语言项目加载所有对应技能
-4. 基于现有结构做规划，避免与已有代码冲突
+
+### a. 语言探测（复用 language-detect skill）
+加载 `language-detect` skill 自动检测项目语言并加载对应编码规范。
+
+### b. 项目结构分析
+使用 `glob` / `read` 查看项目根目录结构，识别现有文件和目录布局。
+
+### c. 现状总结
+基于现有结构做规划，避免与已有代码冲突。
 
 ## 步骤2：需求分析与规划
 1. 分析用户需求，拆解为功能模块
