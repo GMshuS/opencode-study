@@ -33,12 +33,7 @@ permissions:
 3. 仅加载 plan.md 中指定的 `@xxx-coding-standards` 技能
 
 ### 回退自动探测编码规范（仅在 plan.md 不存在或信息不完整时）
-当 plan.md 不存在或未明确指定 @xxx-coding-standards 时，通过项目文件自动检测语言并加载对应的编码规范技能：
-   - `package.json` / `tsconfig.json` / `*.js` / `*.ts` / `*.tsx` → **JavaScript/TypeScript** → 加载 `javascript-coding-standards` 技能
-   - `setup.py` / `pyproject.toml` / `requirements.txt` / `*.py` → **Python** → 加载 `python-coding-standards` 技能
-   - `go.mod` / `*.go` → **Go** → 加载 `go-coding-standards` 技能
-   - `CMakeLists.txt` / `Makefile` / `*.c` / `*.cpp` / `*.h` → **C/C++** → 加载 `c-cpp-coding-standards` 技能
-   - 多语言项目加载所有对应技能
+当 plan.md 不存在或未明确指定 @xxx-coding-standards 时，加载 `language-detect` skill 进行自动语言探测。
 
 ## 步骤2：编写代码
 1. 严格遵循计划中的技术方案、文件结构、任务清单

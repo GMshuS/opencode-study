@@ -47,14 +47,7 @@ permissions:
 
 #### 2. 语言特定规范（在通用维度之上叠加加载）
 
-根据检测到的项目语言，使用 `skill` 工具加载对应的编码规范 skill，其规范条目将作为 **通用维度的补充约束** 在审查中一并执行：
-
-- `package.json` / `tsconfig.json` / `*.js` / `*.ts` / `*.tsx` / `*.jsx` → **JavaScript/TypeScript** → 加载 `javascript-coding-standards` 技能
-- `setup.py` / `pyproject.toml` / `requirements.txt` / `*.py` → **Python** → 加载 `python-coding-standards` 技能
-- `go.mod` / `go.sum` / `*.go` → **Go** → 加载 `go-coding-standards` 技能
-- `CMakeLists.txt` / `Makefile` / `*.c` / `*.cpp` / `*.h` / `*.hpp` / `*.cc` / `*.cxx` → **C/C++** → 加载 `c-cpp-coding-standards` 技能
-
-> **多项目语言处理规则**：若项目同时符合多种语言特征（如包含 `package.json` 和 `pyproject.toml`），按检测到的所有语言 **分别加载对应的 skill**，审查时覆盖全部规范。若无法匹配任何已知语言，则仅执行通用审查维度。
+加载 `language-detect` skill 进行自动语言探测，其加载的编码规范条目将作为 **通用维度的补充约束** 在审查中一并执行。
 
 生成包含审查报告内容的修复方案：`code-review-assistant/YYYYMMDD/FixPlan.md`
 
