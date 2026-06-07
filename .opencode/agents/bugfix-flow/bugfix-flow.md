@@ -127,7 +127,7 @@ $MODIFIED_FILES = []
 
 ### 步骤3：编译验证（循环，上限 2 次重试）
 
-**构建与静态检查**：复用 `auto-verify-code` skill 的完整验证流程（构建验证 + 类型检查 + Linter 检查）。
+**构建与静态检查**：复用 `build-verify` skill 的完整验证流程（构建验证 + 类型检查 + Linter 检查）。
 
 **重试机制**：
 - 首次失败 → 记录错误到 `./bugfix-flow/$DATE/bugfix-$BUGFIX_ID/errors.log`

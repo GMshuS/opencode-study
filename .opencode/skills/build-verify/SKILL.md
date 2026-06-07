@@ -1,6 +1,6 @@
 ---
-name: auto-verify-code
-description: 当编写、修改、生成、删除代码后调用。任何代码文件变动后都要触发。
+name: build-verify
+description: 当编写、修改、生成、删除代码后调用。执行编译验证，确保代码至少能成功构建（编译通过、类型检查通过、Linter检查通过）。
 ---
 
 # 自动代码验证 Skill

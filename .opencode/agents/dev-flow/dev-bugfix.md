@@ -65,9 +65,8 @@ permissions:
 3. 从文件内容中提取语言/框架和编码规范信息 → 直接使用，不重复探测
 4. 仅加载文件中指定的 `@xxx-coding-standards` 技能
 
-### 回退自动探测（仅在文件不存在或信息不完整时）
-dev-master 不再传递上下文，由各子 agent 自行从文件读取。
-自动检测并加载对应的编码规范技能：
+### 回退自动探测编码规范（仅在文件不存在或信息不完整时）
+当 review.md/plan.md 不存在或未明确指定 @xxx-coding-standards 时，通过项目文件自动检测语言并加载对应的编码规范技能：
    - `package.json` / `tsconfig.json` / `*.js` / `*.ts` / `*.tsx` → **JavaScript/TypeScript** → 加载 `javascript-coding-standards` 技能
    - `setup.py` / `pyproject.toml` / `requirements.txt` / `*.py` → **Python** → 加载 `python-coding-standards` 技能
    - `go.mod` / `*.go` → **Go** → 加载 `go-coding-standards` 技能
@@ -113,7 +112,7 @@ dev-master 不再传递上下文，由各子 agent 自行从文件读取。
 
 修复完成后，执行快速编译确认修复没有破坏编译：
 
-1. 根据项目语言执行对应的编译/构建命令（参照 `auto-verify-code` skill 的策略）
+1. 根据项目语言执行对应的编译/构建命令（参照 `build-verify` skill 的策略）
 2. **要求**：编译通过（退出码=0）
 3. **如编译失败** → 返回步骤 4 重新修复
 4. **不执行**完整的类型检查、Linter 检查（这些由 @dev-review 在审查环节执行）
