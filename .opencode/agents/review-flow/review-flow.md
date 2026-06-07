@@ -32,21 +32,29 @@ permissions:
 
 ### 阶段1：代码审查与修复方案
 
-**通用审查维度**：
-- 架构设计
-- 错误处理
-- 资源管理
-- 代码质量
-- 测试覆盖
-- 安全性（注入防护、敏感信息泄露、权限校验）
+#### 1. 通用审查维度（所有项目强制执行）
 
-#### 语言特定检查清单
-根据项目语言，使用 `skill` 工具加载对应的编码规范 skill。加载后其核心规范摘要及完整规范将注入当前上下文，供审查使用。
-- `package.json` / `tsconfig.json` / `*.js` / `*.ts` / `*.tsx` → **JavaScript/TypeScript** → 加载 `javascript-coding-standards` 技能
+所有语言项目均需从以下维度进行审查，建议按优先级顺序执行：
+
+| 优先级 | 审查维度 | 检查要点示例 |
+|--------|----------|-------------|
+| P0 | 架构设计 | 模块职责是否单一、耦合度是否合理、分层是否清晰 |
+| P1 | 错误处理 | 异常是否被正确捕获/传播、错误信息是否清晰、是否有 panic 风险 |
+| P2 | 安全性 | SQL注入/XSS/CSRF防护、敏感信息硬编码、权限校验缺失 |
+| P3 | 资源管理 | 内存/连接池/文件句柄是否正确释放、是否有资源泄漏风险 |
+| P4 | 代码质量 | 命名规范、重复代码、魔法数字、函数长度、注释质量 |
+| P5 | 测试覆盖 | 边界条件测试、异常路径测试、核心逻辑测试覆盖率 |
+
+#### 2. 语言特定规范（在通用维度之上叠加加载）
+
+根据检测到的项目语言，使用 `skill` 工具加载对应的编码规范 skill，其规范条目将作为 **通用维度的补充约束** 在审查中一并执行：
+
+- `package.json` / `tsconfig.json` / `*.js` / `*.ts` / `*.tsx` / `*.jsx` → **JavaScript/TypeScript** → 加载 `javascript-coding-standards` 技能
 - `setup.py` / `pyproject.toml` / `requirements.txt` / `*.py` → **Python** → 加载 `python-coding-standards` 技能
-- `go.mod` / `*.go` → **Go** → 加载 `go-coding-standards` 技能
-- `CMakeLists.txt` / `Makefile` / `*.c` / `*.cpp` / `*.h` → **C/C++** → 加载 `c-cpp-coding-standards` 技能
-- **其它**: 参照**通用审查维度**
+- `go.mod` / `go.sum` / `*.go` → **Go** → 加载 `go-coding-standards` 技能
+- `CMakeLists.txt` / `Makefile` / `*.c` / `*.cpp` / `*.h` / `*.hpp` / `*.cc` / `*.cxx` → **C/C++** → 加载 `c-cpp-coding-standards` 技能
+
+> **多项目语言处理规则**：若项目同时符合多种语言特征（如包含 `package.json` 和 `pyproject.toml`），按检测到的所有语言 **分别加载对应的 skill**，审查时覆盖全部规范。若无法匹配任何已知语言，则仅执行通用审查维度。
 
 生成包含审查报告内容的修复方案：`code-review-assistant/YYYYMMDD/FixPlan.md`
 
