@@ -35,7 +35,7 @@ dev-master 不再传递上下文，由各子 agent 自行从文件读取。
   - `CMakeLists.txt` / `Makefile` / `*.c` / `*.cpp` / `*.h` → **C/C++** → 加载 `c-cpp-coding-standards` 技能
   - 多语言项目加载所有对应技能
 
-## 步骤2：构建验
+## 步骤2：构建验证
 加载 `auto-verify-code` skill 执行完整的构建验证流程（构建验证 + 类型检查 + Linter 检查）。
 **要求**:
 - 构建和类型检查必须通过（退出码=0），失败则记录为严重问题
