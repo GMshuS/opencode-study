@@ -8,7 +8,7 @@ tools:
   write: true
   edit: true
   bash: true
-permission:
+permissions:
   edit: allow
   bash:
     "*": "ask"
@@ -58,16 +58,24 @@ permission:
 专注 BUG 修复，遵循标准调试流程：
 
 ## 步骤1：语言探测与上下文读取
-1. **从文件读取上下文**：
-   - 读取 `./coding-dev/$FEATURE_NAME/review.md` 获取问题清单、涉及文件、报错信息
-   - 读取 `./coding-dev/$FEATURE_NAME/plan.md` 获取技术方案上下文
-2. 从文件内容中提取语言/框架和编码规范信息 → 直接使用，不重复探测
-3. 如文件不存在或信息不完整 → 自动检测：
+
+### 从文件读取上下文
+1. **先读取** `./coding-dev/$FEATURE_NAME/review.md` 获取问题清单、涉及文件、报错信息
+2. **再读取** `./coding-dev/$FEATURE_NAME/plan.md` 获取技术方案上下文
+3. 从文件内容中提取语言/框架和编码规范信息 → 直接使用，不重复探测
+4. 仅加载文件中指定的 `@xxx-coding-standards` 技能
+
+### 回退自动探测（仅在文件不存在或信息不完整时）
+dev-master 不再传递上下文，由各子 agent 自行从文件读取。
+自动检测并加载对应的编码规范技能：
    - `package.json` / `tsconfig.json` / `*.js` / `*.ts` / `*.tsx` → **JavaScript/TypeScript** → 加载 `javascript-coding-standards` 技能
    - `setup.py` / `pyproject.toml` / `requirements.txt` / `*.py` → **Python** → 加载 `python-coding-standards` 技能
    - `go.mod` / `*.go` → **Go** → 加载 `go-coding-standards` 技能
    - `CMakeLists.txt` / `Makefile` / `*.c` / `*.cpp` / `*.h` → **C/C++** → 加载 `c-cpp-coding-standards` 技能
-4. 使用 `git log --oneline -10` / `git blame <file>` 追溯近期变更，定位可能引入 BUG 的提交
+   - 多语言项目加载所有对应技能
+
+### BUG 追溯（附加）
+1. 使用 `git log --oneline -10` / `git blame <file>` 追溯近期变更，定位可能引入 BUG 的提交
 
 ## 步骤1.5：自动格式修复（仅在存在风格问题时执行）
 
@@ -101,7 +109,7 @@ permission:
 2. 不引入新功能、不重构无关代码
 3. 不破坏原有逻辑和风格
 
-## 步骤 4.5：修复后编译自检
+## 步骤4.5：修复后编译自检
 
 修复完成后，执行快速编译确认修复没有破坏编译：
 

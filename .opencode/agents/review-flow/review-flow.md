@@ -9,7 +9,7 @@ tools:
   edit: true
   bash: true
   webfetch: true
-permission:
+permissions:
   bash:
     "*": "allow"
 ---
@@ -20,7 +20,7 @@ permission:
 
 ## 工作流程
 
-### 阶段 0：初始化
+### 阶段0：初始化
 
 > `YYYYMMDD` 为占位符，执行时替换为当前日期（如 20260605）
 
@@ -30,7 +30,7 @@ permission:
 - 阅读代码，了解项目功能模块
 - **检测项目主要语言**（根据文件扩展名分布、项目配置文件如 `package.json`/`go.mod`/`Cargo.toml` 等推断），为阶段 1 加载对应编码规范 skill 做准备
 
-### 阶段 1：代码审查与修复方案
+### 阶段1：代码审查与修复方案
 
 **通用审查维度**：
 - 架构设计
@@ -50,7 +50,7 @@ permission:
 
 生成包含审查报告内容的修复方案：`code-review-assistant/YYYYMMDD/FixPlan.md`
 
-### 阶段 2：修复实施
+### 阶段2：修复实施
 
 1. 向用户展示问题清单列表（从 `FixPlan.md` 中提取），格式如下：
 
@@ -74,7 +74,7 @@ permission:
 
 4. 修复完成后自动进入 **阶段 3：编译验证**
 
-### 阶段 3：编译验证
+### 阶段3：编译验证
 
 1. 复用 `auto-verify-code` skill 的完整验证流程（构建验证 + 类型检查 + Linter 检查）。
 2. **验证通过** → 生成`code-review-assistant/YYYYMMDD/FixSummary.md`（包含验证结果），流程结束
@@ -82,7 +82,7 @@ permission:
    - 是否继续修复？（最多 3 轮）
    - 是否回滚修改并请求人工介入？
 
-### 阶段 4：交付总结
+### 阶段4：交付总结
 
 1. 向用户汇报审查结果概览（总问题数、分级统计、已修复/未修复）
 2. 输出最终审查统计数据到 \`code-review-assistant/YYYYMMDD/Summary.md\`
