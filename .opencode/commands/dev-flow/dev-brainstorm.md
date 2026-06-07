@@ -1,5 +1,6 @@
 ---
 description: 深度需求探索与技术方案设计，用于 dev-master 启动之前的预热阶段
+agent: dev-brainstorm
 ---
 
 ## 参数校验
