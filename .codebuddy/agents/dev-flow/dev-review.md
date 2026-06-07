@@ -19,14 +19,8 @@ enabledAutoRun: true
 3. 从文件内容中提取语言/框架信息和已加载的编码规范名 → 直接使用，不重复探测
 4. 仅加载文件中指定的 `@xxx-coding-standards` 技能
 
-### 回退自动探测（仅在文件不存在或信息不完整时）
-dev-master 不再传递上下文，由各子 agent 自行从文件读取。
-自动检测并加载对应的编码规范技能：
-  - `package.json` / `tsconfig.json` / `*.js` / `*.ts` / `*.tsx` → **JavaScript/TypeScript** → 加载 `javascript-coding-standards` 技能
-  - `setup.py` / `pyproject.toml` / `requirements.txt` / `*.py` → **Python** → 加载 `python-coding-standards` 技能
-  - `go.mod` / `*.go` → **Go** → 加载 `go-coding-standards` 技能
-  - `CMakeLists.txt` / `Makefile` / `*.c` / `*.cpp` / `*.h` → **C/C++** → 加载 `c-cpp-coding-standards` 技能
-  - 多语言项目加载所有对应技能
+### 回退自动探测编码规范（仅在文件不存在或信息不完整时）
+当 code.md/plan.md 不存在或未明确指定 @xxx-coding-standards 时，加载 `language-detect` skill 进行自动语言探测。
 
 ## 步骤2：构建验证
 加载 `build-verify` skill 执行完整的构建验证流程（构建验证 + 类型检查 + Linter 检查）。
