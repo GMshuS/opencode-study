@@ -30,6 +30,7 @@ dev-master 不再传递上下文，由各子 agent 自行从文件读取。
    - `setup.py` / `pyproject.toml` / `requirements.txt` / `*.py` → **Python** → 加载 `python-coding-standards` 技能
    - `go.mod` / `*.go` → **Go** → 加载 `go-coding-standards` 技能
    - `CMakeLists.txt` / `Makefile` / `*.c` / `*.cpp` / `*.h` → **C/C++** → 加载 `c-cpp-coding-standards` 技能
+   - 多语言项目加载所有对应技能
 
 ## 步骤2：编写代码
 1. 严格遵循计划中的技术方案、文件结构、任务清单

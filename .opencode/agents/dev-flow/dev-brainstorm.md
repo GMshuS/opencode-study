@@ -9,7 +9,7 @@ tools:
   edit: true
   bash: true
   webfetch: true
-permission:
+permissions:
   bash:
     "*": "allow"
 ---
