@@ -65,9 +65,6 @@ permissions:
 3. 从文件内容中提取语言/框架和编码规范信息 → 直接使用，不重复探测
 4. 仅加载文件中指定的 `@xxx-coding-standards` 技能
 
-### 回退自动探测编码规范（仅在文件不存在或信息不完整时）
-当 review.md/plan.md 不存在或未明确指定 @xxx-coding-standards 时，加载 `language-detect` skill 进行自动语言探测。
-
 ### BUG 追溯（附加）
 1. 使用 `git log --oneline -10` / `git blame <file>` 追溯近期变更，定位可能引入 BUG 的提交
 
