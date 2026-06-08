@@ -31,7 +31,7 @@
    struct TNetworkManager { };
 
    //  错误
-   struct NetworkManager { };  // 没有C前缀
+   struct NetworkManager { };  // 没有T前缀
    struct network_manager { }; // 小写加下划线
    ```
 
