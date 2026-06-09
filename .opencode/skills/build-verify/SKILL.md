@@ -1,105 +1,103 @@
 ---
 name: build-verify
-description: 当编写、修改、生成、删除代码后调用。执行编译验证，确保代码至少能成功构建（编译通过、类型检查通过、Linter检查通过）。
+description: 代码变更后执行构建验证。根据语言、项目结构、工具链自主决策，执行静态检查→编译验证→结构化报告。
 ---
 
-# 自动代码验证 Skill
+# 构建验证 Skill
 
 ## 核心原则
 
-**优先使用项目命令** — 按以下优先级推断验证命令：项目构建脚本 > 项目配置文件（package.json scripts、Cargo.toml 等） > 语言标准通用命令
+- **先静态，后编译** — 先做不依赖运行时的检查（格式/Lint/类型），快速发现错误
+- **最小化验证** — 只验证变更所影响的范围，避免全量构建
+- **自主决策** — 根据环境探测结果选择当前可用的最强验证方式
+- **降级不跳过** — 工具链缺失时使用语言内置语法检查作为保底
+- **完整报告** — 所有检查项独立执行并报告，不因一项失败而跳过其他
 
-**降级不跳过** — 项目命令不可用时，使用语言标准通用命令验证，而非跳过
+## 工作流程
 
-## 验证流程
+### 步骤 1: 识别语言与项目结构
 
-### 步骤 1: 识别语言和环境
-根据修改的文件扩展名确定编程语言和运行环境：
-- **Python**: .py 文件
-- **JS/TS**: .js / .ts 文件
-- **Go**: .go 文件
-- **Rust**: .rs 文件
-- **Java**: .java 文件
-- **C#**: .cs 文件  
-- **C/C++**: .c / .cpp / .h / .hpp 文件
-- **其他**: 根据项目配置或用户提示确定
+自行完成以下探测：
 
-### 步骤 2: 执行静态检查
+- **语言**：从文件扩展名和项目配置文件推断
+- **构建系统**：识别 package.json / CMakeLists.txt / Cargo.toml / Makefile / .pro 等
+- **工具链**：检查环境可用工具（`which g++` / `node --version` / `cargo --version` 等）
+- **影响范围**：评估修改的文件是独立文件、模块内文件还是跨模块变更
 
-#### 步骤 2.1 类型检查（如项目启用）
+### 步骤 2: 静态检查（全部执行，独立报告）
 
-按优先级推断类型检查命令：
+根据语言和可用环境，依次执行以下检查（有配置/有工具就执行，没有就跳过）：
 
-1. **项目配置文件** — 检查 package.json 的 `scripts` 字段中的 `typecheck` / `type-check` / `typescript:check` 等自定义命令；Go 项目检查 `go vet` 是否已在 Makefile 中定义
-2. **语言标准命令** — 如未在项目中找到自定义命令，使用以下通用命令：
-   - JavaScript/TypeScript: `npx tsc --noEmit`（如项目使用 TypeScript）
-   - Rust: `cargo check`
-   - Go: `go vet ./...`
-   - Python: `mypy .`（如检测到 mypy 配置）
-   - Java: `mvn compile`（编译即类型检查）
-   - .NET: `dotnet build --no-restore`（编译即类型检查）
-   - C/C++: 依赖编译器类型检查（编译失败即类型错误）
-3. **其他** — 根据项目实际使用的工具链推断（如检测到 `tsconfig.json` 则用 `tsc`，检测到 `pyproject.toml` 中 mypy 配置则用 `mypy`）
+| 检查层级 | 说明 | 示例工具 |
+|----------|------|----------|
+| ① 格式 | 代码风格一致性 | prettier / gofmt / black --check / clang-format |
+| ② Lint | 代码规范与潜在错误 | eslint / flake8 / clang-tidy / cargo clippy |
+| ③ 类型 | 类型安全 | tsc --noEmit / mypy / go vet |
+| ④ 语法 | 基础语法正确性 | py_compile / g++ -fsyntax-only / cl /c |
 
-#### 步骤 2.2 Linter 检查（如项目启用）
+**原则**：每项独立执行，各自输出结果。一项失败不影响其他项的执行。
 
-按优先级推断 Linter 命令：
+### 步骤 3: 最小化编译验证
 
-1. **检测配置文件** — 检查项目根目录是否存在以下配置文件，若有则运行对应工具：
-   - `.eslintrc.*` / `eslintConfig` in package.json → `npx eslint <涉及文件>`
-   - `.biomerc` / `biome.json` → `npx @biomejs/biome check <涉及文件>`
-   - `.flake8` / `[flake8]` in `setup.cfg` → `flake8 <涉及文件>`
-   - `pyproject.toml` 中 `[tool.ruff]` → `ruff check <涉及文件>`
-   - `.clang-tidy` → `clang-tidy <涉及文件>`
-   - `checkstyle.xml` → `mvn checkstyle:check`
-   - `stylecop.json` → `dotnet format --verify-no-changes`
-   - 无配置文件 → 跳过并告知用户
-2. **项目命令** — 检查 package.json 或类似配置文件中的 `scripts.lint` 或 `scripts.lint:check`
-3. **语言标准命令** — 如未找到配置文件和自定义命令，但已知该语言有通用 Linter，可作为兜底（如 Go 的 `go vet ./...`、Rust 的 `cargo clippy`）
+#### 3.1 构建配置
 
-### 步骤 3: 执行构建验证
+Debug 构建提供更详细的诊断输出。仅在项目显式指定 Release 时切换。
 
-#### 步骤 3.1 检查项目构建命令
-检查项目根目录（或 AGENTS.md 所在目录）：
-1. **工程构建脚本** — 项目根目录下的 *.bat / *.sh / Makefile 等编译脚本
-2. **项目专用构建脚本** — 优先检查 AGENTS.md / CODEBUDDY.md、package.json 中的 `scripts.build`、Cargo.toml 等清单文件中定义的构建命令
-3. **语言通用命令** — 各语言的标准编译/运行命令
-4. **Monorepo 子包** — 若检测到项目使用 monorepo 结构（如 package.json 含 workspaces、pnpm-workspace.yaml、lerna.json），尝试定位修改文件所属子包，在其子目录内执行构建命令
+#### 3.2 工具链命令参考
 
-#### 步骤 3.2 执行构建验证
+| 构建系统 | Debug 构建命令 | 单文件语法检查 |
+|----------|--------------|--------------|
+| **Qt (qmake, Linux)** | `qmake "CONFIG+=debug" "CONFIG+=qml_debug" && make -j$(nproc)` | `g++ -c -std=c++17 -Wall -Wextra file.cpp` |
+| **Qt (qmake, Windows)** | `qmake "CONFIG+=debug" "CONFIG+=qml_debug" && jom` | `cl /c /std:c++17 /EHsc /Zi /FS file.cpp` |
+| **Qt (CMake)** | `cmake -B build -DCMAKE_BUILD_TYPE=Debug && cmake --build build -j$(nproc)` | — |
+| **CMake 通用** | `cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug && cmake --build build -j$(nproc)` | — |
+| **MSVC (sln/vcxproj)** | `msbuild /t:rebuild /p:configuration=Debug /m` | `cl /c /std:c++17 /EHsc file.cpp` |
+| **Generic Makefile** | `make -j$(nproc)` | `g++ -c -std=c++17 -Wall -Wextra file.cpp` |
 
-使用步骤 3.1 发现的构建命令执行；如未找到，按以下优先级推断：
+#### 3.3 编译策略选择
 
-1. **项目构建脚本** — 项目根目录下的 `build.bat` / `build.sh` / Makefile
-2. **项目配置文件中的命令**：
-   - Node.js 项目：`npm run build`（或 pnpm/yarn/bun 对应命令）
-   - Rust 项目：`cargo build`
-   - Go 项目：`go build ./...`
-   - Python 项目：运行 `setup.py build` / `python -m build`，或直接 `python -m py_compile <filename>`
-   - Java 项目：`mvn compile` 或 `gradle build`
-   - .NET 项目：`dotnet build --no-restore`
-3. **Monorepo** — 若项目使用 monorepo 结构，需在修改文件所属子包目录内执行构建
+根据项目结构和影响范围，选择最轻量的编译策略。针对 **C++** 项目，按检测到的工具链从 3.2 中选择对应命令。
 
-> 优先使用 Debug 配置（项目已指定 Release 除外），Debug 提供更详细的错误信息。
+| 影响范围 | 策略 | 示例 |
+|----------|------|------|
+| 单文件 | 单文件编译 | `g++ -c file.cpp` / `cl /c file.cpp` / `javac File.java` / `python -m py_compile file.py` |
+| 单模块 | 模块级构建 | 进入模块目录执行对应 Debug 构建命令 |
+| 跨模块 | 按依赖顺序编译 | 仅编译受影响模块及其直接依赖 |
+| 全项目 | 仅当无法缩小范围时 | 在项目根目录执行对应 Debug 构建命令 |
 
-> Windows 上 C/C++ 项目构建需要 Visual Studio 开发者命令提示符环境。示例（仅供参考，需根据实际项目类型调整）：
-> - MSVC 项目：`msbuild /t:rebuild /p:configuration=Debug`
-> - CMake 项目：`cmake --build build --config Debug`
-> - Qt 项目：`qmake && jom`
+`msbuild /m` / `make -j$(nproc)` / `cmake --build build -j$(nproc)` / `jom` 已内置并行，建议构建时始终启用。
 
-### 步骤 4: 结果处理与报告
-- **成功**: 告知用户验证通过及使用的验证方式（优先级路径：项目脚本 > 配置文件命令 > 通用命令 / 降级检查）
-- **失败（编译类错误）**: 分析错误信息，向用户报告：
-  - 使用的验证方式与命令（标注所属优先级层级）
-  - 错误原因
-  - 修复方案
-  - **不自动重试**，由用户决定是否修复后重新触发
-- **失败（环境/工具链缺失）**: 告知用户当前环境无法完整编译，但已执行了最高可用级别的验证方式
+### 步骤 4: 结构化报告
+
+按以下统一模板输出：
+
+```
+═══ 构建验证报告 ═════════════════════════════
+  语言:       {检测到的语言及版本}
+  构建系统:   {检测到的构建系统}
+  工具链:    {可用工具及版本}
+  影响范围:   {修改的文件及范围评估}
+  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─
+
+  静态检查:
+    ├─ 格式 ({工具名})    {✅ 通过 | ⚠️ 通过 (N 条建议) | ❌ 失败 | ⏭️ 跳过 — 原因}
+    │     {仅当失败/警告时: 文件:行:列  {错误消息} }
+    │     {仅当失败/警告时: → 建议: {修复方案} }
+    ├─ Lint ({工具名})    {同上}
+    │     {同上，可多行}
+    ├─ 类型 ({工具名})    {同上}
+    └─ 语法 ({工具名})    {同上}
+
+  编译验证 ({命令}):
+    {✅ 通过 — 0 errors, 0 warnings (用时) | ❌ 失败 — {编译器原始错误}}
+
+═══ 结论: {✅ 全部通过 | ⚠️ 部分通过 (N 项警告) | ❌ N 项失败} ═══
+```
 
 ## 注意事项
-- **不要跳过验证步骤** — 至少执行到当前环境可用的最高级别
-- **不要假设代码能正常工作，必须实际运行验证**
-- 如果项目有测试脚本，优先运行测试
-- 如果验证超时，适当调整超时时间后重试
-- Web服务器类应用：启动后等待3-5秒确认无报错即视为通过，然后停止
-- **工具链缺失不是跳过验证的理由** — 使用静态分析或格式化检查作为保底
+
+- **所有检查项独立执行**：一项失败不影响其他项运行
+- **报告必须包含错误详情**：原始错误输出 + 文件位置 + 修复建议
+- **跳过需说明原因**：如「未找到 cppcheck，跳过 Lint 检查」
+- **不要跳过验证**：至少执行到语法检查级别
+- **自主决策**：上述流程为指引，LLM 可根据实际情况灵活调整
