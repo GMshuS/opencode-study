@@ -367,23 +367,6 @@ project: $PROJECT_NAME
 theme: $THEME
 status: brainstorming-complete
 date: $DATE
-key-decisions:
-  - domain: "技术选型"
-    decision: "[具体选型]"
-    reason: "[推荐理由]"
-    alternatives: ["[备选方案]"]
-    confirmed-by-user: true
-  - domain: "架构方案"
-    decision: "[选定的架构]"
-    reason: "[选择理由]"
-    alternatives: ["[备选架构]"]
-    confirmed-by-user: true
-risks:
-  - category: "[风险类别]"
-    description: "[风险描述]"
-    severity: "高/中/低"
-    probability: "高/中/低"
-    mitigation: "[应对策略]"
 ---
 ```
 
@@ -435,11 +418,11 @@ $THEME
 
 ## 关键决策记录
 
-[从 YAML frontmatter 中提取的 key-decisions 列表]
+[记录关键决策及选择理由]
 
 ## 风险清单
 
-[从 YAML frontmatter 中提取的 risks 列表]
+[列出所有风险及应对策略]
 ```
 
 写入后必须执行验证：
