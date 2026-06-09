@@ -1,17 +1,10 @@
 ---
-description: 完整代码审查流程：代码审查与修复方案 → 修复实施 → 编译验证 → 总结交付
-mode: primary
 name: review-flow
-temperature: 0.1
-tools:
-  read: true
-  write: true
-  edit: true
-  bash: true
-  webfetch: true
-permissions:
-  bash:
-    "*": "allow"
+description: 完整代码审查流程：代码审查与修复方案 → 修复实施 → 编译验证 → 总结交付
+tools: list_files, search_file, search_content, read_file, read_lints, replace_in_file, write_to_file, execute_command, create_rule, delete_files, web_fetch, use_skill, web_search
+agentMode: manual
+enabled: true
+enabledAutoRun: true
 ---
 
 # 角色：代码审查专家（完整流程）
@@ -51,7 +44,19 @@ permissions:
 
 生成包含审查报告内容的修复方案：`code-review-assistant/YYYYMMDD/FixPlan.md`
 
+#### 3. 方案确认
+
+生成 `FixPlan.md` 后，将完整内容展示给用户，请求用户做出选择：
+
+- **批准** → 进入阶段2（修复实施）
+- **修改** → 用户提出修改意见（增删改问题、调整修复方案、修改分级等），按反馈更新 `FixPlan.md`，更新后再次展示确认
+- **拒绝** → 流程结束，输出仅含审查报告概要
+
+> 修改循环最多 **5** 轮，超限则流程终止，提示「请人工介入」。
+
 ### 阶段2：修复实施
+
+> 前置条件：用户已在阶段1确认 `FixPlan.md`，以下流程仅在批准后执行。
 
 1. 向用户展示问题清单列表（从 `FixPlan.md` 中提取），格式如下：
 
