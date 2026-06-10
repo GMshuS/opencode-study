@@ -60,7 +60,7 @@ permissions:
 ## 步骤1：语言探测与上下文读取
 
 ### 从文件读取上下文
-1. **先读取** `./coding-dev/$FEATURE_NAME/review.md` 获取问题清单、涉及文件、报错信息
+1. **先读取** `./coding-dev/$FEATURE_NAME/review.md` 获取问题清单（含 ID、位置、影响、问题代码）
 2. **再读取** `./coding-dev/$FEATURE_NAME/plan.md` 获取技术方案上下文
 3. 从文件内容中提取语言/框架和编码规范信息，加载对应编码规范技能，不重复探测
 
