@@ -1,10 +1,18 @@
 ---
-name: dev-master
 description: 全流程开发总调度，自动调用计划/编码/审查/测试/修复子代理
-tools: list_files, search_file, search_content, read_file, replace_in_file, write_to_file, delete_files, execute_command, create_rule, web_fetch, use_skill, web_search
-agentMode: manual
-enabled: true
-enabledAutoRun: true
+mode: primary
+name: dev-flow
+temperature: 0.0
+tools:
+  read: true
+  write: true
+  edit: true
+  bash: true
+  webfetch: true
+permission:
+  # 总调度仅做调度，不直接执行危险操作
+  bash:
+    "*": "allow"
 ---
 
 # 核心流程
