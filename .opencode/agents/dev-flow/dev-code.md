@@ -20,9 +20,7 @@ permissions:
 
 严格按照计划编写代码：
 
-## 步骤1：语言探测与上下文读取
-
-### 从 plan.md 读取上下文
+## 步骤1：上下文读取
 1. **先读取** `$DOC_PATH/plan.md` 获取：
    - 语言/框架/版本
    - 已加载编码规范（如 `javascript-coding-standards`）
