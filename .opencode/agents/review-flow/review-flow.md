@@ -24,7 +24,7 @@ permissions:
 
 - 生成会话 ID：`SESSION_ID=$(date +%Y%m%d_%H%M%S)`（如 `20260609_143025`）
 - SET $DOC_PATH = ./code-review-assistant/$SESSION_ID
-- 创建输出目录：`mkdir -p $DOC_PATH`
+- 创建输出目录 `$DOC_PATH/`（如不存在则创建）
 - 确认用户要审查的目录/文件路径
 - 分析项目组织方式，了解项目架构
 - 阅读代码，了解项目功能模块
