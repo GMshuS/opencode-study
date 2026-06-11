@@ -14,7 +14,7 @@ enabledAutoRun: true
 ## 步骤1：语言探测与上下文读取
 
 ### 从 plan.md 读取上下文
-1. **先读取** `./coding-dev/$FEATURE_NAME/plan.md` 获取：
+1. **先读取** `$DOC_PATH/plan.md` 获取：
    - 语言/框架/版本
    - 已加载编码规范（如 `javascript-coding-standards`）
    - 架构设计方案
@@ -29,7 +29,7 @@ enabledAutoRun: true
 3. 按加载的编码规范书写代码
 4. 生成前先 `read` 目标文件及相邻文件，理解现有代码风格
 5. 每完成一个文件，记录完整路径
-6. **每完成一批 Level 任务后，必须立即**更新 `./coding-dev/$FEATURE_NAME/plan.md`：
+6. **每完成一批 Level 任务后，必须立即**更新 `$DOC_PATH/plan.md`：
    - 按任务名精确匹配，将 `- [ ] 任务X` 替换为 `- [x] 任务X`
    - **只修改复选框，保留任务名原文不变**（不要改写任务名以保证可被 grep 机械匹配）
    - 若本批某个任务部分完成或跳过，**不要勾选**，并在成果报告的「任务完成度」段说明

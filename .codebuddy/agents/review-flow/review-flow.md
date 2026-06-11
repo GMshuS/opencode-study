@@ -16,7 +16,8 @@ enabledAutoRun: true
 ### 阶段0：初始化
 
 - 生成会话 ID：`SESSION_ID=$(date +%Y%m%d_%H%M%S)`（如 `20260609_143025`）
-- 创建输出目录：`mkdir -p code-review-assistant/$SESSION_ID`
+- SET $DOC_PATH = ./code-review-assistant/$SESSION_ID
+- 创建输出目录 `$DOC_PATH/`（如不存在则创建）
 - 确认用户要审查的目录/文件路径
 - 分析项目组织方式，了解项目架构
 - 阅读代码，了解项目功能模块
@@ -37,18 +38,18 @@ enabledAutoRun: true
 | P4 | 代码质量 | 命名规范、重复代码、魔法数字、函数长度、注释质量 |
 | P5 | 测试覆盖 | 边界条件测试、异常路径测试、核心逻辑测试覆盖率 |
 
-#### 2. 语言特定规范（在通用维度之上叠加加载）
+#### 2. 语言特定规范（与通用维度平行执行，同等权重）
 
-加载 `language-detect` skill 进行自动语言探测，其加载的编码规范条目将作为 **通用维度的补充约束** 在审查中一并执行。
+加载 `language-detect` skill 进行自动语言探测，其加载的编码规范条目与通用维度同等级别，审查时共同执行。
 
-生成包含审查报告内容的修复方案：`code-review-assistant/$SESSION_ID/FixPlan.md`
+生成包含审查报告内容的修复方案：`$DOC_PATH/FixPlan.md`
 
 #### 3. 方案确认
 
 生成 `FixPlan.md` 后，将完整内容展示给用户，请求用户做出选择：
 
 - **批准** → 进入阶段2（修复实施）
-- **修改** → 用户提出修改意见（增删改问题、调整修复方案、修改分级等），按反馈更新 `code-review-assistant/$SESSION_ID/FixPlan.md`，更新后再次展示确认
+- **修改** → 用户提出修改意见（增删改问题、调整修复方案、修改分级等），按反馈更新 `$DOC_PATH/FixPlan.md`，更新后再次展示确认
 - **拒绝** → 流程结束，输出仅含审查报告概要
 
 > 修改循环最多 **5** 轮，超限则流程终止，提示「请人工介入」。
@@ -67,7 +68,7 @@ enabledAutoRun: true
    m-001   | Minor     | 问题标题简述
    P-001   | Potential | 问题标题简述
    --- 共 X 个问题（Critical: X, Major: X, Minor: X, Potential: X）---
-   完整问题描述和修复方案详见 `code-review-assistant/$SESSION_ID/FixPlan.md`
+   完整问题描述和修复方案详见 `$DOC_PATH/FixPlan.md`
 
 2. 用户选择要修复的问题：
    - **按编号指定**：输入 `C-001, M-001`
@@ -75,9 +76,9 @@ enabledAutoRun: true
    - **全部修复**：输入 `all`
    - **仅输出报告** → 流程结束
 
-3. 根据用户选择从 `code-review-assistant/$SESSION_ID/FixPlan.md` 中筛选对应问题实施修复
-
-4. 修复完成后自动进入 **阶段 3：编译验证与交付总结**
+3. 根据用户选择从 `$DOC_PATH/FixPlan.md` 中筛选对应问题实施修复
+4. 每次修改文件后，将文件路径追加到 `$MODIFIED_FILES`（若已存在则跳过）
+5. 修复完成后自动进入 **阶段 3：编译验证与交付总结**
 
 ### 阶段3：编译验证与交付总结
 
@@ -87,10 +88,21 @@ enabledAutoRun: true
 
 2. 复用 `build-verify` skill 的完整验证流程（构建验证 + 类型检查 + Linter 检查）
 
-3. **验证全部通过** → 生成 `code-review-assistant/$SESSION_ID/FixSummary.md`
-   （含审查概览、分级统计、已修复/未修复清单、验证结果），流程结束
+3. **验证全部通过** → 生成 `$DOC_PATH/FixSummary.md`
+   （含审查概览、分级统计、已修复/未修复清单、验证结果）
 
-4. **存在失败** → 分析失败原因，询问用户：
+4. **生成提交信息**：
+   - 根据本次审查修改生成 4 段式提交信息：
+     ```
+     问题来源：【审查中发现的问题来源与审查范围】
+     问题原因：【问题产生的原因（按问题 ID 归类）】
+     修改说明：【修改的方法以及修改点】
+     测试建议：【对修改点给出测试建议】
+     ```
+   - 将提交信息与 `$MODIFIED_FILES` 合并写入 `$DOC_PATH/commit-msg.txt`
+   - 终端提示用户可通过 `/git/git-autocommit $DOC_PATH/commit-msg.txt` 提交变更
+
+5. **存在失败** → 分析失败原因，询问用户：
    - 继续修复？（最多 3 轮）
    - 回滚修改，生成 `FixSummary.md`（含已修复/未修复清单、失败详情），请求人工介入？
 
@@ -118,6 +130,7 @@ enabledAutoRun: true
 **`FixSummary.md`** 包含：
 - 审查概览（总问题数、分级统计、已修复/未修复、涉及文件列表）
 - 编译验证结果（验证清单执行状态、构建/类型检查/Linter 结果）
+- 提交信息：详见 commit-msg.txt
 
 ## 约束
 
@@ -126,3 +139,4 @@ enabledAutoRun: true
 3. 每个问题必须标注严重级别并分配唯一 ID（格式如 `C-001`），修复方案必须包含修复前后的代码对比
 4. 提供修复后的验证清单
 5. 保持原有代码风格，确保向后兼容
+6. 提交信息生成后仅保存到文件（含修改文件列表），**不自动执行 git commit**，由用户决定提交时机。`@git-autocommit` 可解析 commit-msg.txt 中的提交信息和文件列表，直接完成范围提交。

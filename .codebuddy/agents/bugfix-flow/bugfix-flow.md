@@ -23,9 +23,11 @@ enabledAutoRun: true
 
 获取当前日期 `$DATE`（格式 `YYYYMMDD`），按当天日期创建分层目录。
 
-创建状态目录和文件`./bugfix-flow/$DATE/bugfix-$BUGFIX_ID`
+SET $DOC_PATH = ./bugfix-flow/$DATE/bugfix-$BUGFIX_ID
 
-初始化状态文件 `./bugfix-flow/$DATE/bugfix-$BUGFIX_ID/.coding-dev-state.json`：
+创建状态目录和文件 `$DOC_PATH`
+
+初始化状态文件 `$DOC_PATH/.coding-dev-state.json`：
 ```json
 { "status": "analyzing", "problem": "<问题描述>" }
 ```
@@ -95,7 +97,7 @@ enabledAutoRun: true
 - **修改方案** → `$ROUND_COUNT` 加 1。若 `$ROUND_COUNT > 5` 则终止并上报「方案多次未通过确认，请人工介入」；否则进入下一轮分析
 - **终止** → 更新状态 `status: "cancelled"`，终止流程
 
-**保存修复方案到本地**：`./bugfix-flow/$DATE/bugfix-$BUGFIX_ID/fix-plan.md`
+**保存修复方案到本地**：`$DOC_PATH/fix-plan.md`
 
 **循环上限**：最多 5 轮，超限则终止并上报「方案多次未通过确认，请人工介入」。
 
@@ -121,7 +123,7 @@ $MODIFIED_FILES = []
 **构建与静态检查**：复用 `build-verify` skill 的完整验证流程（构建验证 + 类型检查 + Linter 检查）。
 
 **重试机制**：
-- 首次失败 → 记录错误到 `./bugfix-flow/$DATE/bugfix-$BUGFIX_ID/errors.log`
+- 首次失败 → 记录错误到 `$DOC_PATH/errors.log`
 - 分析编译错误原因，修正代码
 - 若修正涉及文件修改，将文件路径追加到 `$MODIFIED_FILES`（去重）
 - 重试前询问用户「是否重试（剩余 N 次）或终止」
@@ -135,9 +137,9 @@ $MODIFIED_FILES = []
 生成 4 段式提交信息并汇总交付文档：
 
 1. 根据修改内容生成提交信息（问题来源 / 问题原因 / 修改说明 / 测试建议）
-2. 将提交信息与 `$MODIFIED_FILES` 合并写入 `./bugfix-flow/$DATE/bugfix-$BUGFIX_ID/commit-msg.txt`
+2. 将提交信息与 `$MODIFIED_FILES` 合并写入 `$DOC_PATH/commit-msg.txt`
 3. 更新状态文件 `status: "delivered"`
-4. 写入 `./bugfix-flow/$DATE/bugfix-$BUGFIX_ID/fix-result.md`，内容要求如下：
+4. 写入 `$DOC_PATH/fix-result.md`，内容要求如下：
    ```markdown
    # Bug 修复结果
 
@@ -174,7 +176,7 @@ $MODIFIED_FILES = []
       fix-result.md    - 修复结果（含验证记录）
       commit-msg.txt   - 提交信息 + 修改文件列表
 
-    执行 @git-autocommit ./bugfix-flow/$DATE/bugfix-$BUGFIX_ID/commit-msg.txt 提交
+    执行 @git-autocommit $DOC_PATH/commit-msg.txt 提交
    ────────────────────────────────────────
    ```
 
@@ -210,7 +212,7 @@ $MODIFIED_FILES = []
 1. 步骤 1 的方案确认是**强制环节**，未经用户确认不得进入修复执行
 2. 分析与确认循环最多 5 轮，超限终止并上报人工介入
 3. 步骤 3 编译验证最多重试 2 次，超限上报人工介入
-4. 所有报告文件统一保存在 `./bugfix-flow/$DATE/bugfix-$BUGFIX_ID/` 文件夹
+4. 所有报告文件统一保存在 `$DOC_PATH/` 文件夹
 5. 状态文件每次状态变化必须同步更新
 6. 提交信息生成后仅保存到文件（含修改文件列表），**不自动执行 git commit**，由用户决定提交时机。`@git-autocommit` 可解析 `commit-msg.txt` 中的提交信息和文件列表，直接完成范围提交
 7. `.coding-dev-state.json` 是流程正确性的关键，每次状态变化必须更新
@@ -220,6 +222,6 @@ $MODIFIED_FILES = []
 本 agent **不自动提交**。`commit-msg.txt` 同时包含提交信息和修改文件列表，用户可：
 1. 直接使用 `commit-msg.txt` 中的提交信息执行 `git commit`
 2. 修改后提交
-3. 通过 `@git-autocommit ./bugfix-flow/$DATE/bugfix-$BUGFIX_ID/commit-msg.txt` 自动提交：
+3. 通过 `@git-autocommit $DOC_PATH/commit-msg.txt` 自动提交：
    - `@git-autocommit` 读取 `---` 前的 4 段式提交信息直接使用
    - 读取 `---` 后 `修改文件列表:` 中的文件路径限定 `git add` 范围

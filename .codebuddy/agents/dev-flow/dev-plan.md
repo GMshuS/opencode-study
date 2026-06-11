@@ -13,7 +13,7 @@ enabledAutoRun: true
 
 ## 步骤0：上下文感知
 
-1. **检查** `./coding-dev/$FEATURE_NAME/plan.md` 是否存在
+1. **检查** `$DOC_PATH/plan.md` 是否存在
 2. **若存在（修正模式）**：
    - 读取 `plan.md` 了解已有计划内容
    - 从 dev-master 获取用户的修改意见（通过 prompt 传递）
