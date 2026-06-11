@@ -60,8 +60,8 @@ permissions:
 ## 步骤1：语言探测与上下文读取
 
 ### 从文件读取上下文
-1. **先读取** `./coding-dev/$FEATURE_NAME/review.md` 获取问题清单（含 ID、位置、影响、问题代码）
-2. **再读取** `./coding-dev/$FEATURE_NAME/plan.md` 获取技术方案上下文
+1. **先读取** `$DOC_PATH/review.md` 获取问题清单（含 ID、位置、影响、问题代码）
+2. **再读取** `$DOC_PATH/plan.md` 获取技术方案上下文
 3. 从文件内容中提取语言/框架和编码规范信息，加载对应编码规范技能，不重复探测
 
 ### BUG 追溯（附加）
@@ -69,7 +69,7 @@ permissions:
 
 ## 步骤1.5：自动格式修复（仅在存在风格问题时执行）
 
-从 `./coding-dev/$FEATURE_NAME/review.md` 读取问题清单：
+从 `$DOC_PATH/review.md` 读取问题清单：
 - 如果不包含任何格式/风格类问题 → 直接进入步骤2
 - 如果包含格式/风格类问题（缩进、命名规范、import 顺序等）：
   - **JS/TS** → `npx prettier --write <涉及文件>`

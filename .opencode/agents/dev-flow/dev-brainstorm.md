@@ -18,7 +18,7 @@ permissions:
 
 你负责在 dev-master 启动之前，针对**新需求/新功能**进行完整方案设计。
 流程覆盖：现有系统理解（棕地项目）→ 需求分析 → 技术选型 → 架构探索 → 风险评估 → 实施路线图，
-通过交互式探索产出 `coding-dev/<项目名>/brainstorm.md` 方案文档。
+通过交互式探索产出 `$DOC_PATH/brainstorm.md` 方案文档。
 
 ---
 
@@ -87,16 +87,18 @@ CASE 4 — 无法提取:
 
 获取当前日期 `$DATE`（格式 `YYYY-MM-DD`）。
 
-创建状态目录：`./coding-dev/$PROJECT_NAME/`
+SET $DOC_PATH = ./coding-dev/$PROJECT_NAME
 
-检查 `coding-dev/$PROJECT_NAME/` 下是否已存在 `brainstorm.md` 文件：
+创建状态目录：`$DOC_PATH/`
+
+检查 `$DOC_PATH/` 下是否已存在 `brainstorm.md` 文件：
 - **如已存在**：读取该文件，向用户确认是否基于已有内容继续探索
 - **如不存在**：按新流程初始化
 
 以原子方式创建状态文件：
 ```shell
-echo '{ "status": "brainstorming", "project": "$PROJECT_NAME", "theme": "$THEME", "current-phase": 1 }' > ./coding-dev/$PROJECT_NAME/.brainstorm-state.json.tmp
-mv ./coding-dev/$PROJECT_NAME/.brainstorm-state.json.tmp ./coding-dev/$PROJECT_NAME/.brainstorm-state.json
+echo '{ "status": "brainstorming", "project": "$PROJECT_NAME", "theme": "$THEME", "current-phase": 1 }' > $DOC_PATH/.brainstorm-state.json.tmp
+mv $DOC_PATH/.brainstorm-state.json.tmp $DOC_PATH/.brainstorm-state.json
 ```
 
 ---
@@ -362,10 +364,10 @@ mv ./coding-dev/$PROJECT_NAME/.brainstorm-state.json.tmp ./coding-dev/$PROJECT_N
 请输入『确认交付』完成方案文档，或提出修改意见。
 ```
 
-- **用户确认交付** → 按以下模板写入 `coding-dev/$PROJECT_NAME/brainstorm.md`
+- **用户确认交付** → 按以下模板写入 `$DOC_PATH/brainstorm.md`
 - **用户提出修改** → 收集意见，修改对应章节，重新确认
 
-写入 `coding-dev/$PROJECT_NAME/brainstorm.md`，**必须包含 YAML frontmatter**：
+写入 `$DOC_PATH/brainstorm.md`，**必须包含 YAML frontmatter**：
 
 ```yaml
 ---
@@ -434,7 +436,7 @@ $THEME
 写入后必须执行验证：
 
 ```shell
-if (Test-Path -LiteralPath "coding-dev/$PROJECT_NAME/brainstorm.md") {
+if (Test-Path -LiteralPath "$DOC_PATH/brainstorm.md") {
   Write-Host "✅ 验证通过：brainstorm.md 已成功写入"
 } else {
   Write-Host "❌ 错误：brainstorm.md 未写入！请重新执行写入操作"
@@ -450,10 +452,10 @@ if (Test-Path -LiteralPath "coding-dev/$PROJECT_NAME/brainstorm.md") {
 
 探索主题：$THEME
 方案文档已保存到:
-coding-dev/$PROJECT_NAME/brainstorm.md
+$DOC_PATH/brainstorm.md
 
 下一步:
-/dev-flow/dev-master $PROJECT_NAME coding-dev/$PROJECT_NAME/brainstorm.md  按此方案启动全流程开发
+/dev-flow/dev-master $PROJECT_NAME $DOC_PATH/brainstorm.md  按此方案启动全流程开发
 ────────────────────────────────────────
 ```
 
@@ -462,8 +464,8 @@ coding-dev/$PROJECT_NAME/brainstorm.md
 ## 文件修改限制
 
 整个执行过程中，**只能修改以下文件**：
-- `coding-dev/$PROJECT_NAME/brainstorm.md`
-- `coding-dev/$PROJECT_NAME/.brainstorm-state.json`
+- `$DOC_PATH/brainstorm.md`
+- `$DOC_PATH/.brainstorm-state.json`
 
 禁止修改任何其他文件（代码文件、配置文件、其他 markdown 文件）。
 
