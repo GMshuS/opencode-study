@@ -108,5 +108,4 @@ enabledAutoRun: true
    - 本文件（plan.md）将作为后续步骤（dev-code、dev-review、dev-bugfix）的上下文输入
    - 各子 agent 将直接从本文件读取语言/框架、架构方案、任务清单、验收条件等信息
    - 请确保上述信息完整、准确，字段名清晰可识别
-9. 下一步建议：
-   请调用 @dev-code 按照计划编写代码
+
