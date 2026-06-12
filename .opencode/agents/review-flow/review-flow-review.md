@@ -20,7 +20,7 @@ permissions:
 
 ## 步骤1：上下文读取
 
-1. **先读取** `$DOC_PATH/review-targets.txt` 获取待审查的文件/目录列表
+1. **先读取** `$DOC_PATH/targets.md` 获取待审查的文件/目录列表（路径已由主 agent 收集完毕）
 2. **读取审查目标文件**，分析项目组织方式和功能模块
 3. 加载 `language-detect` skill 自动探测主要语言和框架
 4. 根据探测结果加载对应编码规范 skill
