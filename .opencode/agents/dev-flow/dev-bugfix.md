@@ -105,6 +105,4 @@ permissions:
 7. 已加载编码规范：【xxx-coding-standards】
 8. 修改文件列表：
    - 文件A
-9. 下一步建议：
-   - 已修复 → 请调用 @dev-review 重新审查
-   - 无法修复 → 上报异常，请求人工介入
+
