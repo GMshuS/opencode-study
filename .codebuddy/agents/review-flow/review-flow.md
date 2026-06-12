@@ -23,7 +23,7 @@ enabledAutoRun: true
 ## 初始化
 
 1. 生成会话 ID：`SESSION_ID=$(date +%Y%m%d_%H%M%S)`（如 `20260609_143025`）
-2. SET $DOC_PATH = ./code-review-assistant/$SESSION_ID
+2. SET $DOC_PATH = ./build-verify/$SESSION_ID
 3. 创建输出目录 `mkdir -p $DOC_PATH/`
 4. 向用户询问要审查的目录/文件路径，用户确认后写入 `$DOC_PATH/targets.md`
    （仅写入路径清单，不读取源码文件。源码读取由 review-flow-review subagent 负责）
