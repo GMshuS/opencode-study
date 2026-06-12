@@ -37,8 +37,8 @@ permissions:
 5. 以原子方式创建状态文件：
 
 ```shell
-echo '{ "iteration": 0, "status": "reviewing" }' > $DOC_PATH/.coding-dev-state.json.tmp
-mv $DOC_PATH/.coding-dev-state.json.tmp $DOC_PATH/.coding-dev-state.json
+echo '{ "iteration": 0, "status": "reviewing" }' > $DOC_PATH/.flow-state.json.tmp
+mv $DOC_PATH/.flow-state.json.tmp $DOC_PATH/.flow-state.json
 ```
 
 每次状态更新均采用此原子写入模式（tmp + rename），防止 crash 导致文件损坏。

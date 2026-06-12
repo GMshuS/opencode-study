@@ -8,7 +8,7 @@ bugfix-flow 是一个**独立、内联**的 Bug 修复 Agent，基于 opencode p
 
 - **独立闭环**：不依赖任何 subagent，所有逻辑内联在单一 agent 中
 - **轻量高效**：快速响应 Bug，减少不必要的流程环节
-- **状态可恢复**：通过 `.coding-dev-state.json` 状态文件支持中断后恢复
+- **状态可恢复**：通过 `.flow-state.json` 状态文件支持中断后恢复
 - **人工兜底**：所有自动化路径都有上报人工介入的逃生口
 
 ### 1.2 与 coding-bugfix 的差异
@@ -36,7 +36,7 @@ bugfix-flow 是一个**独立、内联**的 Bug 修复 Agent，基于 opencode p
 bugfix-flow/                            ← Bug 修复产物
 └── $DATE/                              ← YYYYMMDD 格式，按当天日期分层
     └── bugfix-$BUGFIX_ID/              ← 问题标识符
-        ├── .coding-dev-state.json      ← 状态文件
+        ├── .flow-state.json      ← 状态文件
         ├── fix-plan.md                 ← 已确认的修复方案
         ├── fix-result.md               ← 修复结果报告
         ├── commit-msg.txt              ← 生成的提交信息
@@ -99,7 +99,7 @@ bugfix-flow/                            ← Bug 修复产物
 1. 提取核心关键词，生成 `$BUGFIX_ID`（如 `login500failed`）
 2. 获取当前日期 `$DATE`（格式 `YYYYMMDD`）
 3. 创建产物目录 `./bugfix-flow/$DATE/bugfix-$BUGFIX_ID/`
-4. 初始化状态文件 `.coding-dev-state.json`：
+4. 初始化状态文件 `.flow-state.json`：
    ```json
    { "status": "analyzing", "problem": "<问题描述>", "iteration": 0 }
    ```
@@ -304,7 +304,7 @@ bugfix-flow/                            ← Bug 修复产物
 
 ## 7. 状态文件生命周期
 
-**路径**：`./bugfix-flow/$DATE/bugfix-$BUGFIX_ID/.coding-dev-state.json`
+**路径**：`./bugfix-flow/$DATE/bugfix-$BUGFIX_ID/.flow-state.json`
 
 **字段**：
 ```json
@@ -370,4 +370,4 @@ bugfix-flow/                            ← Bug 修复产物
 4. 所有报告文件统一保存在 `./bugfix-flow/$DATE/bugfix-$BUGFIX_ID/` 文件夹
 5. 状态文件每次状态变化必须同步更新
 6. 提交信息生成后仅保存到文件，**不自动执行 git commit**，由用户决定提交时机
-7. `.coding-dev-state.json` 是流程正确性的关键，每次状态变化必须更新
+7. `.flow-state.json` 是流程正确性的关键，每次状态变化必须更新

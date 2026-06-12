@@ -30,13 +30,13 @@ SET $DOC_PATH = ./bugfix-flow/$DATE/bugfix-$BUGFIX_ID
 创建目录 `$DOC_PATH`（含父目录）。
 
 ### 3. 状态恢复（优先）
-读取状态文件 `$DOC_PATH/.coding-dev-state.json`：
+读取状态文件 `$DOC_PATH/.flow-state.json`：
 - **文件存在且 JSON 完整** → 校验后按当前 `status` 恢复对应流程阶段
 - **文件损坏无法解析** → 报错「状态文件损坏，请人工介入」
 - **文件不存在** → 进入步骤 4 首次初始化
 
 ### 4. 首次初始化
-初始化状态文件 `$DOC_PATH/.coding-dev-state.json`：
+初始化状态文件 `$DOC_PATH/.flow-state.json`：
 ```json
 { "status": "analyzing", "problem": "<问题描述>" }
 ```
@@ -201,7 +201,7 @@ $MODIFIED_FILES = []
 ### 状态文件生命周期
 
 ```
-.coding-dev-state.json 贯穿全流程（直接写入）：
+.flow-state.json 贯穿全流程（直接写入）：
   初始化   → { status: "analyzing",  problem: "..." }
   分析完成  → { status: "analyzed" }
   方案确认  → { status: "confirmed" }
@@ -220,7 +220,7 @@ $MODIFIED_FILES = []
 4. 所有报告文件统一保存在 `$DOC_PATH/` 文件夹
 5. 状态文件每次状态变化必须同步更新
 6. 提交信息生成后仅保存到文件（含修改文件列表），**不自动执行 git commit**，由用户决定提交时机。`@git-autocommit` 可解析 `commit-msg.txt` 中的提交信息和文件列表，直接完成范围提交
-7. `.coding-dev-state.json` 是流程正确性的关键，每次状态变化必须更新
+7. `.flow-state.json` 是流程正确性的关键，每次状态变化必须更新
 
 ## 与 git-autocommit 的配合
 
