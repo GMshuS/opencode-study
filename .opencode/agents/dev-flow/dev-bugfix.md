@@ -11,46 +11,7 @@ tools:
 permissions:
   edit: allow
   bash:
-    "*": "ask"
-    # Node.js
-    "npm run *": "allow"
-    "npm test*": "allow"
-    "npx *": "allow"
-    # Python
-    "python *": "allow"
-    "python3 *": "allow"
-    "pytest *": "allow"
-    # Go
-    "go build*": "allow"
-    "go test*": "allow"
-    "go vet*": "allow"
-    "gofmt*": "allow"
-    # Python 格式化
-    "black *": "allow"
-    # C/C++ (含 MSVC/Qt 生态)
-    "cmake *": "allow"
-    "make *": "allow"
-    "gcc *": "allow"
-    "g++ *": "allow"
-    "clang *": "allow"
-    "clang-format*": "allow"
-    "qmake *": "allow"
-    "jom *": "allow"
-    "msbuild *": "allow"
-    # Git 追溯
-    "git log*": "allow"
-    "git blame*": "allow"
-    "git diff*": "allow"
-    "git show*": "allow"
-    "git status": "allow"
-    # Linter 检查
-    "eslint *": "allow"
-    "npx eslint *": "allow"
-    "flake8 *": "allow"
-    "pylint *": "allow"
-    "golint *": "allow"
-    "clang-tidy *": "allow"
-    "cpplint *": "allow"
+    "*": "allow"
 ---
 
 # 角色：资深调试与修复专家
@@ -105,4 +66,3 @@ permissions:
 7. 已加载编码规范：【xxx-coding-standards】
 8. 修改文件列表：
    - 文件A
-
