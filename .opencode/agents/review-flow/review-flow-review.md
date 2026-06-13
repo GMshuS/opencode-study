@@ -12,6 +12,7 @@ permissions:
   all: ask
   bash:
     "*": "allow"
+model: opencode-go/deepseek-v4-pro
 ---
 
 # 角色：代码审查专家

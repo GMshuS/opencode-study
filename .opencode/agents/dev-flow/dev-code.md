@@ -14,6 +14,7 @@ permissions:
   edit: allow
   bash:
     "*": "allow"
+model: opencode-go/deepseek-v4-flash
 ---
 
 # 角色：高级开发工程师

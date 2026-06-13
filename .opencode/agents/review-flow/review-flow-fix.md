@@ -12,6 +12,7 @@ permissions:
   edit: allow
   bash:
     "*": "allow"
+model: opencode-go/deepseek-v4-flash
 ---
 
 # 角色：资深调试与修复专家
@@ -27,7 +28,7 @@ permissions:
 2. 从内容中提取语言/框架和编码规范信息，加载对应编码规范技能，不重复探测
 
 ### 获取筛选条件
-从 dev-master 的 prompt 中获取待修复问题范围：
+从 dev-flow 的 prompt 中获取待修复问题范围：
 - **按 ID**：`待修复问题：C-001, M-001`
 - **按级别**：`待修复问题：Critical, Major`
 - **全部**：`待修复问题：all`

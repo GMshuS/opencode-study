@@ -85,7 +85,7 @@ dev-brainstorm 是 dev-flow 的**前置可选阶段**，用于在进入正式开
                            ▼
 ┌──────────────────────────────────────────────────────────┐
 │ 初始化 → 创建 .brainstorm-state.json                       │
-│  SET $DOC_PATH = ./coding-dev/$PROJECT_NAME               │
+│  SET $DOC_PATH = ./dev-flow/$PROJECT_NAME               │
 └──────────────────────────┬───────────────────────────────┘
                            │
           ┌────────────────┼────────────────┐
@@ -566,7 +566,7 @@ dev-brainstorm 是 dev-flow 的**前置可选阶段**，用于在进入正式开
 ### 5.2 文件通信架构
 
 ```
-coding-dev/$FEATURE_NAME/
+dev-flow/$FEATURE_NAME/
 ├── .flow-state.json         ← dev-flow 全流程状态（原子写入）
 ├── .brainstorm-state.json   ← dev-brainstorm 阶段状态（原子写入，可选）
 ├── brainstorm.md            ← dev-brainstorm 输出（可选，含 YAML frontmatter）
@@ -728,7 +728,7 @@ BUG 修复完成 → status: "bugfixed"（iteration += 1）
 └── *-coding-standards/      ← 各语言编码规范（按需加载）
 
 运行产物（项目根目录）：
-coding-dev/
+dev-flow/
 └── $FEATURE_NAME/
     ├── .flow-state.json           ← dev-flow 状态
     ├── .brainstorm-state.json     ← dev-brainstorm 状态（可选）
@@ -749,7 +749,7 @@ coding-dev/
 2. **审查与修复回环必须执行** — 修复后必须重新审查，不能直接交付
 3. **构建验证首次即执行** — 首次代码审查包含完整构建验证
 4. **修复循环最多 3 轮** — 超限上报人工介入
-5. **交付范围仅限代码文件** — 排除 `coding-dev/` 下的报告文件
+5. **交付范围仅限代码文件** — 排除 `dev-flow/` 下的报告文件
 6. **分批编码按依赖序（含链折叠）** — 前一批未完成不启动下一批；线性链自动折叠
 7. **批次完成判定依赖 plan.md grep** — 机械化核验，不可凭主观判断
 8. **编码规范按需加载** — 子 agent 从 plan.md 读取或自动探测语言后加载

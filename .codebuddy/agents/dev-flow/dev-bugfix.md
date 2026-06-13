@@ -59,4 +59,3 @@ enabledAutoRun: true
 7. 已加载编码规范：【xxx-coding-standards】
 8. 修改文件列表：
    - 文件A
-

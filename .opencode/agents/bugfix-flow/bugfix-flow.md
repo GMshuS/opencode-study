@@ -12,6 +12,7 @@ tools:
 permissions:
   bash:
     "*": "allow"
+model: opencode-go/deepseek-v4-flash
 ---
 
 # 角色：Bug 修复专家（完整流程）
