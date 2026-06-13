@@ -2,7 +2,7 @@
 description: 根据开发计划编写业务代码、接口、组件
 mode: subagent
 name: dev-code
-temperature: 0.2
+temperature: 0.3
 tools:
   read: true
   write: true

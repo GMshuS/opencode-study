@@ -2,7 +2,7 @@
 description: 排查代码BUG、逻辑错误、异常问题，精准修复
 mode: subagent
 name: dev-bugfix
-temperature: 0.1
+temperature: 0.3
 tools:
   read: true
   write: true

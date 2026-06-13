@@ -2,7 +2,7 @@
 description: 代码质量审查、编译测试、安全检测、优化建议
 mode: subagent
 name: dev-review
-temperature: 0.0
+temperature: 0.2
 tools:
   read: true
   write: false

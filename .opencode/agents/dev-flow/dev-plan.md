@@ -2,7 +2,7 @@
 description: 需求分析、开发计划拆解、架构设计、任务拆分
 mode: subagent
 name: dev-plan
-temperature: 0.3
+temperature: 0.1
 tools:
   read: true
   write: false

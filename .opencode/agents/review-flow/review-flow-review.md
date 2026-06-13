@@ -2,7 +2,7 @@
 description: 代码审查与修复方案生成：多维度审查 → 分级问题清单 → 修复方案 → 验证清单
 mode: subagent
 name: review-flow-review
-temperature: 0.1
+temperature: 0.3
 tools:
   read: true
   write: false

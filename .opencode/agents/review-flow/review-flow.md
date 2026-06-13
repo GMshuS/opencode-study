@@ -2,7 +2,7 @@
 description: 完整代码审查全流程编排：审查→修复方案→确认→修复→验证→交付
 mode: primary
 name: review-flow
-temperature: 0.1
+temperature: 0.2
 tools:
   read: true
   write: true

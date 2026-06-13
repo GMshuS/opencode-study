@@ -2,7 +2,7 @@
 description: 按修复方案实施代码修复：筛选问题 → 最小化修复 → 编译自检 → 更新验证清单
 mode: subagent
 name: review-flow-fix
-temperature: 0.1
+temperature: 0.3
 tools:
   read: true
   write: true
