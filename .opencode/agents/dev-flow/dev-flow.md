@@ -13,7 +13,7 @@ permission:
   # 总调度仅做调度，不直接执行危险操作
   bash:
     "*": "allow"
-model: opencode-go/deepseek-v4-pro
+model: opencode-go/deepseek-v4-flash
 ---
 
 # 核心流程
