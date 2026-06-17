@@ -69,13 +69,13 @@ model: opencode-go/deepseek-v4-flash
 3. 构建和类型检查失败必须记录为 Critical 级问题
 4. 测试失败必须记录失败用例到问题清单
 
-# 审查报告
+# 输出规范
 
-执行完审查后，按以下顺序操作：
+执行完审查后，分两步操作：
 
-**1. 写入 review.md**：将下述完整报告写入 `$DOC_PATH/review.md`（覆盖写入）。
+## 写入 review.md（完整报告）
 
-审查报告内容格式：
+将以下内容写入 `$DOC_PATH/review.md`（覆盖写入）：
 
 1. 审查状态：【通过 / 不通过】
 2. 审查范围：
@@ -106,8 +106,9 @@ model: opencode-go/deepseek-v4-flash
    - [ ] 基础可用性验证通过（如有）
 6. 已加载编码规范：【xxx-coding-standards】
 
-**2. 返回摘要**：向 dev-flow 返回以下**简洁摘要**（不要返回完整报告全文）：
+## 返回摘要
+
+向 dev-flow 返回以下简洁摘要（不要返回完整报告全文）：
 
 审查状态：【通过 / 不通过】
 问题总数：X（Critical: X, Major: X, Minor: X, Potential: X）
-
