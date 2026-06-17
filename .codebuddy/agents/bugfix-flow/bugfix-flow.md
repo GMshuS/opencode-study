@@ -38,7 +38,7 @@ SET $DOC_PATH = ./bugfix-flow/$DATE/bugfix-$BUGFIX_ID
 ### 4. 首次初始化
 初始化状态文件 `$DOC_PATH/.flow-state.json`：
 ```json
-{ "status": "analyzing", "problem": "<问题描述>" }
+{ "status": "analyzing", "problem": "<问题描述>", "attempt": 1 }
 ```
 
 ---
@@ -49,7 +49,8 @@ SET $DOC_PATH = ./bugfix-flow/$DATE/bugfix-$BUGFIX_ID
 
 使用内存变量 `$ROUND_COUNT` 跟踪轮次（初始值 1，不写入状态文件）。
 
-**分析流程**（根据轮次调整深度）：
+**分析流程**（根据轮次和状态调整深度）：
+- 若从 `reopened` 状态进入：先读取上一轮修复方案（`fix-plan.md` 或 `fix-plan-v{attempt-1}.md`）和修复结果（`fix-result.md` 或 `fix-result-v{attempt-1}.md`），将「上次的修改方案 + 为什么未生效」作为分析起点
 - 第 1 轮：完整分析——阅读代码、理解业务逻辑、定位根因、评估影响范围
 - 第 2~5 轮：定向补充——仅针对用户上一轮的反馈（缩小范围 / 方案不可行 / 新线索）做聚焦分析
 
@@ -77,6 +78,10 @@ SET $DOC_PATH = ./bugfix-flow/$DATE/bugfix-$BUGFIX_ID
 
 ## 影响范围
 [影响评估]
+
+## 与上一版本的差异（仅 `reopened` 后展示）
+- 上版假设：[...]
+- 本版调整：[...]
 ```
 
 更新状态文件 `status: "analyzed"`。
@@ -156,23 +161,52 @@ $MODIFIED_FILES = []
    ## 提交信息
    详见 `commit-msg.txt`
    ```
-5. 终端展示精简摘要：
-   ```
-   ────────────────────────────────────────
-    Bug 修复完成：bugfix-$BUGFIX_ID
+5. 终端展示精简摘要并等待用户确认：
+    ```
+    ────────────────────────────────────────
+     Bug 修复完成：bugfix-$BUGFIX_ID$ATTEMPT_TAG
 
-    问题：[问题描述]
-    根因：[根因摘要]
-    修改：[$MODIFIED_FILES 个数] 个文件
+     问题：[问题描述]
+     根因：[根因摘要]
+     修改：[$MODIFIED_FILES 个数] 个文件
 
-    报告文件:
-      fix-plan.md      - 修复方案
-      fix-result.md    - 修复结果（含验证记录）
-      commit-msg.txt   - 提交信息 + 修改文件列表
+     报告文件:
+       fix-plan$VERSION_TAG.md    - 修复方案
+       fix-result$VERSION_TAG.md  - 修复结果（含验证记录）
+       commit-msg.txt             - 提交信息 + 修改文件列表
 
-    执行 @git-autocommit $DOC_PATH/commit-msg.txt 提交
-   ────────────────────────────────────────
-   ```
+     执行 @git-autocommit $DOC_PATH/commit-msg.txt 提交
+
+     请确认修复结果：【问题已解决 / 仍存在问题 / 关闭】
+    ────────────────────────────────────────
+    ```
+    其中 `$ATTEMPT_TAG`：若 `attempt == 1` 为空，否则为 ` (第{attempt}次修复)`。
+    `$VERSION_TAG`：若 `attempt == 1` 为空，否则为 `-v{attempt}`。
+
+    **等待用户确认**，不主动结束对话：
+    - **"问题已解决"** → 终结，不再等待
+    - **"仍存在问题"** → 进入 `步骤 4.1：重开修复`
+    - **"关闭"** → 终结，不再等待
+
+### 步骤4.1：重开修复（用户反馈问题未解决时触发）
+
+**触发条件**：在 `delivered` 状态下用户反馈「仍存在问题 / 问题未解决 / 仍然报错」。若用户描述的是全新问题，提示可能需要独立 BUGFIX_ID，询问是否关联到当前会话或新建。
+
+**执行逻辑**：
+1. 读取 `.flow-state.json`，`attempt += 1`
+   - 若 `attempt > 3` → 更新 `status: "cancelled"`，终止并上报「多次修复仍未解决，请人工介入」
+2. `$ROUND_COUNT = 1`（重置分析确认轮次）
+3. 自动加载上一轮上下文，作为分析起点：
+   - 读取 `fix-plan.md`（或 `fix-plan-v{attempt-1}.md`）
+   - 读取 `fix-result.md`（或 `fix-result-v{attempt-1}.md`）
+   - 读取 `errors.log`（若存在）
+   - 分析时应说明「与上一版本的差异」章节
+4. 文档版本化（避免覆盖历史记录）：
+   - 修复方案写入 `$DOC_PATH/fix-plan-v{attempt}.md`
+   - 修复结果写入 `$DOC_PATH/fix-result-v{attempt}.md`
+   - 提交信息追加版本标记 `[V{attempt}]` 前缀
+5. 更新状态文件 `status: "reopened"`
+6. **跳转回步骤 1（问题分析）**，以「上次修改未生效，用户反馈：[用户输入]」作为补充输入，重新进入完整分析→确认→修复→验证→交付流程
 
 ---
 
@@ -186,6 +220,12 @@ $MODIFIED_FILES = []
   方案终止  → { status: "cancelled" }
   执行修复  → { status: "fixing" }
   交付完成  → { status: "delivered" }
+  重开修复  → { status: "reopened" }
+
+状态流转路径：
+  delivered ──(用户反馈问题未解决)──→ reopened ──→ analyzing ──→ ...
+  delivered ──(用户描述新问题)──→ 建议新建独立 BUGFIX_ID
+  delivered ──(用户关闭)──→ 终结
 ```
 
 ---
@@ -197,5 +237,7 @@ $MODIFIED_FILES = []
 3. 步骤 3 编译验证最多重试 2 次，超限上报人工介入
 4. 所有报告文件统一保存在 `$DOC_PATH/` 文件夹
 5. 状态文件每次状态变化必须同步更新
-6. 提交信息生成后仅保存到文件（含修改文件列表），**不自动执行 git commit**，由用户决定提交时机。`@git-autocommit` 可解析 `commit-msg.txt` 中的提交信息和文件列表，直接完成范围提交
+6. `@git-autocommit` 可直接解析 `commit-msg.txt` 中的提交信息和文件列表完成范围提交
 7. `.flow-state.json` 是流程正确性的关键，每次状态变化必须更新
+8. `delivered` 状态下不自动结束对话，等待用户确认；用户反馈问题未解决时进入 `reopened` 回环
+9. 同一会话 reopen 上限 3 次（`attempt` 字段），超限上报人工介入
