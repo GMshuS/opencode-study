@@ -49,6 +49,10 @@ SET $DOC_PATH = ./bugfix-flow/$DATE/bugfix-$BUGFIX_ID
 { "status": "analyzing", "problem": "<问题描述>", "attempt": 1, "round": 1 }
 ```
 
+### 5. 加载编码规范
+
+调用 `language-detect` skill 自动探测项目的主要编程语言。
+
 ---
 
 ## 流程步骤
