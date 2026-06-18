@@ -46,7 +46,7 @@ SET $DOC_PATH = ./bugfix-flow/$DATE/bugfix-$BUGFIX_ID
 ### 4. 首次初始化
 初始化状态文件 `$DOC_PATH/.flow-state.json`：
 ```json
-{ "status": "analyzing", "problem": "<问题描述>", "attempt": 1 }
+{ "status": "analyzing", "problem": "<问题描述>", "attempt": 1, "round": 1 }
 ```
 
 ---
@@ -55,13 +55,13 @@ SET $DOC_PATH = ./bugfix-flow/$DATE/bugfix-$BUGFIX_ID
 
 ### 步骤1：问题分析
 
-使用内存变量 `$ROUND_COUNT` 跟踪轮次（初始值 1，不写入状态文件）。
+从 `.flow-state.json` 读取 `round` 字段作为 `$ROUND_COUNT` 跟踪方案确认轮次。
 
 **分析流程**（根据轮次和状态调整深度）：
 
 - 若从 `reopened` 状态进入（重开修复入口）：
   1. `attempt += 1`；若 `attempt > 3` → 更新 `status: "cancelled"`，终止并上报「多次修复仍未解决，请人工介入」
-  2. `$ROUND_COUNT = 1`（重置分析确认轮次）
+  2. `$ROUND_COUNT = 1`，更新 `.flow-state.json` 的 `round` 字段为 1（重置分析确认轮次）
   3. 自动加载上一轮上下文，作为分析起点：
      - 读取 `fix-plan.md`（或 `fix-plan-v{attempt-1}.md`）
      - 读取 `fix-result.md`（或 `fix-result-v{attempt-1}.md`）
@@ -86,23 +86,18 @@ SET $DOC_PATH = ./bugfix-flow/$DATE/bugfix-$BUGFIX_ID
 [导致问题的代码调用流程 / 复现步骤]
 
 ## 修改点列表
-- **[文件 1]**：[行号范围] - [修改说明]
-  // 修改前
-  ...
-  // 修改后
-  ...
-- **[文件 2]**：[行号范围] - [修改说明]
-  // 修改前
-  ...
-  // 修改后
-  ...
+每个修改点必须输出 diff 代码块（修改前后对比），仅写文字说明视为无效。
+- **[文件 1]**：[修改说明]
+    ```diff
+      <保留行>
+    - <删除行>
+    + <新增行>
+      <保留行>
+    ```
 
 ## 影响范围
 [影响评估]
 
-## 与上一版本的差异（仅 `reopened` 后展示）
-- 上版假设：[...]
-- 本版调整：[...]
 ```
 
 更新状态文件 `status: "analyzed"`。
@@ -116,9 +111,9 @@ SET $DOC_PATH = ./bugfix-flow/$DATE/bugfix-$BUGFIX_ID
 
 **根据用户反馈**：
 - **确认执行** → 保存方案到 `$DOC_PATH/fix-plan.md`，更新状态 `"confirmed"`，进入步骤 2
-- **修改方案** → `$ROUND_COUNT += 1`
-  - ≤ 5：回到步骤 1 补充分析
-  - > 5：更新状态 `"cancelled"`，终止并上报「方案多次未通过确认，请人工介入」
+- **修改方案** → `$ROUND_COUNT += 1`，更新 `.flow-state.json` 的 `round` 字段
+   - ≤ 5：回到步骤 1 补充分析
+   - > 5：更新状态 `"cancelled"`，终止并上报「方案多次未通过确认，请人工介入」
 - **终止** → 更新状态 `"cancelled"`，终止流程
 
 ---
@@ -160,28 +155,20 @@ $MODIFIED_FILES = []
 2. 将提交信息与 `$MODIFIED_FILES` 合并写入 `$DOC_PATH/commit-msg.txt`
 3. 更新状态文件 `status: "delivered"`
 4. 写入 `$DOC_PATH/fix-result.md`，内容要求如下：
-   ```markdown
-   # Bug 修复结果
+    ```markdown
+    # Bug 修复结果
 
-   ## 修复摘要
-   - **问题**：[问题描述]
-   - **根因**：[根因摘要]
-   - **状态**：【已修复 / 部分修复 / 无法修复】
+    ## 修复状态
+    【已修复 / 部分修复 / 无法修复】
 
-   ## 修改内容
-   [修复代码说明 / 修改行数]
+    ## 修改文件
+    [$MODIFIED_FILES 逐行列出]
 
-   ## 涉及文件
-   [$MODIFIED_FILES 逐行列出]
-
-   ## 构建验证结果
-   - 构建：【通过/失败】命令：[xxx]
-   - 类型检查：【通过/失败/跳过】
-   - Linter：【通过/发现问题】
-
-   ## 提交信息
-   详见 `commit-msg.txt`
-   ```
+    ## 构建验证结果
+    - 构建：【通过/失败】命令：[xxx]
+    - 类型检查：【通过/失败/跳过】
+    - Linter：【通过/发现问题】
+    ```
 5. 终端展示精简摘要并等待用户确认：
     ```
     ────────────────────────────────────────
