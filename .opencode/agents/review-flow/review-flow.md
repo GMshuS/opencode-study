@@ -12,7 +12,7 @@ tools:
 permissions:
   bash:
     "*": "allow"
-model: opencode-go/deepseek-v4-pro
+model: opencode-go/deepseek-v4-flash
 ---
 
 # 角色：代码审查全流程编排器
@@ -21,12 +21,34 @@ model: opencode-go/deepseek-v4-pro
 
 ## 文件通信协议
 
-| 步骤 | 子 agent | 输出文件 | 写入策略 | 输入文件 |
-|------|---------|---------|---------|---------|
-| 审查 | review-flow-review | review.md | 覆盖 | targets.md |
-| 修复 | review-flow-fix | bugfix.md | 覆盖 | review.md |
+review-flow 与子 agent 之间通过文件通信，不再通过上下文模板传递字段。
 
-每次调用子 agent，**必须**将 `$DOC_PATH` 的实际值传入 prompt。输入文件由子 agent 自行读取，不通过上下文模板传递。
+### 通信规范
+
+| 步骤 | 输出文件 | 写入者 | 额外参数（review-flow 传入） | 输入文件（子 agent 自行读取） |
+|------|---------|--------|--------------------------|----------------------------|
+| 审查 | `review.md` | review-flow-review | — | `targets.md` |
+| 审查（修正） | `review.md` | review-flow-review | 修改意见 | `review.md` |
+| 修复 | `bugfix.md` | review-flow-fix | 待修复问题 ID 集合 | `review.md` |
+
+### 调用规范
+
+**通用规则**：每次调用子 agent，review-flow **必须**将 `$DOC_PATH` 的实际值写入 prompt
+（子 agent 用此变量拼接路径如 `$DOC_PATH/review.md`）。
+
+**参数速查表**：
+
+| 子 agent | 必传参数 | 说明 |
+|---------|---------|------|
+| @review-flow-review（首次） | — | 自行读取 targets.md |
+| @review-flow-review（修正） | 修改意见 | review.md 已存在时执行修正 |
+| @review-flow-fix | 待修复问题 ID 集合 | 如 `C-001, M-001` 或 `Critical, Major` 或 `all` |
+
+### 一致性保障
+
+- **review.md 是真理来源（SSOT）**：review-flow-fix 从 review.md 获取问题清单、修复方案
+- **文件即契约**：各子 agent 的输出格式在其定义文件中约定，review-flow 不进行字段级解析
+- **修改只影响一点**：如需增减字段，只需修改对应子 agent 的 agent 定义文件，不需要改 review-flow
 
 ## 初始化
 
@@ -55,8 +77,8 @@ mv $DOC_PATH/.flow-state.json.tmp $DOC_PATH/.flow-state.json
 
 ### 阶段1：代码审查与修复方案
 
-1. 调用 @review-flow-review
-2. **将 subagent 返回结果写入** `$DOC_PATH/review.md`
+1. 调用 @review-flow-review（自行写入 `$DOC_PATH/review.md`，返回摘要）
+2. 从返回摘要确认审查完成（无需主 agent 写入文件）
 3. 更新状态文件 `status: "reviewed"`
 
 #### 方案确认（循环，最多 5 轮）
@@ -108,8 +130,8 @@ P-001   | Potential | 问题标题简述
 
 #### 2.2 执行修复
 
-1. 调用 @review-flow-fix，prompt 中传入 `待修复问题：[$SELECTED_ISSUES]`
-2. **将 subagent 返回结果写入** `$DOC_PATH/bugfix.md`
+1. 调用 @review-flow-fix，prompt 中传入 `待修复问题：[$SELECTED_ISSUES]`（自行写入 `$DOC_PATH/bugfix.md`，并更新 review.md 验证清单，返回摘要）
+2. 从返回摘要确认修复完成（无需主 agent 写入文件）
 3. 更新状态文件 `status: "fixed"`（iteration = $FIX_ITERATION）
 
 #### 2.3 核验与循环判定
@@ -179,3 +201,14 @@ P-001   | Potential | 问题标题简述
 ## 约束
 
 提交信息生成后仅保存到文件（含修改文件列表），**不自动执行 git commit**，由用户决定提交时机。`@git-autocommit` 可解析 `commit-msg.txt` 中的提交信息和文件列表，直接完成范围提交。
+
+## 注意
+
+1. 严格按照流程执行，不能以任何理由跳过
+2. 必须按照阶段要求调用 subagent 执行，不能以任何理由不调用
+3. 阶段1的方案确认是强制环节，未经用户确认不得进入修复阶段
+4. 阶段2的修复与核验回环必须执行，修复后必须重新核验
+5. 所有报告文件统一保存在 `$DOC_PATH/` 文件夹中
+6. 阶段3交付时必须生成 `commit-msg.txt`，提示用户可通过 `/git/git-autocommit` 提交变更
+7. 修复循环最多执行 3 轮，超限则上报「请人工介入」，保留工作区现场代码
+8. `.flow-state.json` 是流程正确性的关键，每次状态变化必须同步更新
