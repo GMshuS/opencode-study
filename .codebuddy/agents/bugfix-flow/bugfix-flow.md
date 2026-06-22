@@ -24,9 +24,7 @@ enabledAutoRun: true
 
 ### 2. 工作区准备
 获取当前日期 `$DATE`（格式 `YYYYMMDD`）。
-
 SET $DOC_PATH = ./bugfix-flow/$DATE/bugfix-$BUGFIX_ID
-
 创建目录 `$DOC_PATH`（含父目录）。
 
 ### 3. 状态恢复（优先）
@@ -62,10 +60,7 @@ SET $DOC_PATH = ./bugfix-flow/$DATE/bugfix-$BUGFIX_ID
      - 读取 `fix-plan.md`（或 `fix-plan-v{attempt-1}.md`）
      - 读取 `fix-result.md`（或 `fix-result-v{attempt-1}.md`）
      - 读取 `errors.log`（若存在）
-  4. 文档版本化（避免覆盖历史记录）：
-     - 修复方案写入 `$DOC_PATH/fix-plan-v{attempt}.md`
-     - 修复结果写入 `$DOC_PATH/fix-result-v{attempt}.md`
-     - 提交信息追加版本标记 `[V{attempt}]` 前缀
+  4. 记录版本号上下文：设置 `$ATTEMPT = {attempt}`（用于后续 Step 1.2 确认时决定文件名）
   5. 更新状态文件 `status: "reopened"`
   6. 以「上次修改未生效，用户反馈：[用户输入]」作为补充输入，进入下方分析
 - 第 1 轮：完整分析——阅读代码、理解业务逻辑、定位根因、评估影响范围
@@ -98,15 +93,22 @@ SET $DOC_PATH = ./bugfix-flow/$DATE/bugfix-$BUGFIX_ID
 
 更新状态文件 `status: "analyzed"`。
 
-### 步骤1.2：方案确认（上限 5 轮）
-
 向用户展示方案摘要并确认：
 ```
 请确认（第 $ROUND_COUNT/5 轮）：【确认执行 / 修改方案 / 终止】
 ```
 
+> ⚠️ **重要：输出完修复方案和确认提示后，必须停止，等待用户输入。**
+> 不要自行继续执行到步骤 2。用户输入会通过 Step 1.2 处理。
+
+### 步骤1.2：方案确认（上限 5 轮）
+
 **根据用户反馈**：
-- **确认执行** → 保存方案到 `$DOC_PATH/fix-plan.md`，更新状态 `"confirmed"`，进入步骤 2
+- **确认执行** →
+  - 将方案写入文件（根据版本记录决定文件名）：
+    - 若为首次修复（`$ATTEMPT` 为空或 1）：保存到 `$DOC_PATH/fix-plan.md`
+    - 若为多次修复（`$ATTEMPT > 1`）：保存到 `$DOC_PATH/fix-plan-v{$ATTEMPT}.md`
+  - 更新状态 `"confirmed"`，进入步骤 2
 - **修改方案** → `$ROUND_COUNT += 1`，更新 `.flow-state.json` 的 `round` 字段
    - ≤ 5：回到步骤 1 补充分析
    - > 5：更新状态 `"cancelled"`，终止并上报「方案多次未通过确认，请人工介入」
@@ -122,7 +124,7 @@ $MODIFIED_FILES = []
 ```
 
 **执行内容**：
-1. 按确认的修复方案（`fix-plan.md`）修改代码
+1. 按确认的修复方案（`fix-plan.md` 或 `fix-plan-v{$ATTEMPT}.md`，`$ATTEMPT` 由确认步骤记录）修改代码
 2. 每次修改文件后，将文件路径追加到 `$MODIFIED_FILES`（若已存在则跳过）
 
 更新状态文件 `status: "fixing"`。
