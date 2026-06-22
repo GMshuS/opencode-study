@@ -81,7 +81,11 @@ model: opencode-go/deepseek-v4-flash
 
 将以下内容写入 `$DOC_PATH/review.md`（覆盖写入）：
 
-1. 审查状态：【通过 / 不通过】
+1. 审查结论：【通过 / 不通过】
+   > **判断标准**：
+   > - **不通过**：存在任何级别问题（Critical / Major / Minor / Potential）
+   > - **通过**：完全无问题
+   > - 请严格对照上述标准填写，不得将含问题的报告标记为「通过」
 2. 审查范围：
    - 语言/框架：[]
    - 审查文件：X 个文件（N 个模块）
@@ -114,5 +118,5 @@ model: opencode-go/deepseek-v4-flash
 
 向 dev-flow 返回以下简洁摘要（不要返回完整报告全文）：
 
-审查状态：【通过 / 不通过】
+审查结论：【通过 / 不通过】
 问题总数：X（Critical: X, Major: X, Minor: X, Potential: X）
