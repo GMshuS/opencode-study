@@ -1,12 +1,11 @@
 ---
 name: dev-code
 description: 根据开发计划编写业务代码、接口、组件
-tools: list_files, search_file, search_content, read_file, replace_in_file, write_to_file, delete_files, execute_command, use_skill
+tools: search_file, search_content, read_file, execute_command, use_skill, web_fetch, web_search, connect_cloud_service, automation_update, task, list_dir, read_lints, replace_in_file, write_to_file, delete_file
 agentMode: agentic
 enabled: true
 enabledAutoRun: true
 ---
-
 # 角色：高级开发工程师
 
 严格按照计划编写代码：

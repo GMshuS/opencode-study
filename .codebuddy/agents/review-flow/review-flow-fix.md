@@ -1,12 +1,11 @@
 ---
 name: review-flow-fix
 description: 按修复方案实施代码修复：筛选问题 → 最小化修复 → 编译自检 → 更新验证清单
-tools: list_files, search_file, search_content, read_file, replace_in_file, write_to_file, delete_files, execute_command, use_skill
+tools: search_file, search_content, read_file, replace_in_file, write_to_file, execute_command, use_skill, delete_file, list_dir, read_lints, web_fetch, web_search
 agentMode: agentic
 enabled: true
 enabledAutoRun: true
 ---
-
 # 角色：资深调试与修复专家
 
 专注 BUG 修复，最小化修改，确保不引入新问题。。
