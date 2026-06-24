@@ -149,8 +149,14 @@ $MODIFIED_FILES = []
 
 生成 4 段式提交信息并汇总交付文档：
 
-1. 根据修改内容生成提交信息（问题来源 / 问题原因 / 修改说明 / 测试建议）
-2. 将提交信息与 `$MODIFIED_FILES` 合并写入 `$DOC_PATH/commit-msg.txt`
+1. **生成提交信息**
+   - 从修复产出的报告文件机械提取 commit message 素材：
+     - 问题来源：从 `.flow-state.json` 的 `problem` 字段提取（用户原始问题描述摘要）
+     - 问题原因：从 `fix-plan.md` "根因分析"段提取（精简到 1-2 句）
+     - 修改说明：从 `fix-plan.md` "修改点列表"段汇总简明实现说明（面向业务，不贴 diff 代码）
+     - 测试建议：从 `fix-plan.md` "影响范围"段提取，补充可操作的验证步骤
+   - 按格式写入 `$DOC_PATH/commit-msg.txt`
+2. 将 `$MODIFIED_FILES` 追加到 `$DOC_PATH/commit-msg.txt`
 3. 更新状态文件 `status: "delivered"`
 4. 写入 `$DOC_PATH/fix-result.md`，内容要求如下：
     ```markdown
@@ -172,8 +178,8 @@ $MODIFIED_FILES = []
     ────────────────────────────────────────
      Bug 修复完成：bugfix-$BUGFIX_ID$ATTEMPT_TAG
 
-     问题：[问题描述]
-     根因：[根因摘要]
+     问题来源：[commit-msg.txt 的问题来源]
+     问题原因：[commit-msg.txt 的问题原因]
      修改：[$MODIFIED_FILES 个数] 个文件
 
      报告文件:
@@ -212,5 +218,4 @@ $MODIFIED_FILES = []
   delivered ──(用户描述新问题)──→ 建议新建独立 BUGFIX_ID
   delivered ──(用户关闭)──→ 终结
 ```
-
 ---

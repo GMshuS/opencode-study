@@ -102,3 +102,6 @@ model: opencode-go/deepseek-v4-flash
   - [x] Linter 检查通过
   （N/M 项通过）
 修改文件列表：file1, file2
+问题原因摘要：[各已修复问题的根因简述，格式：C-001: 根因说明]
+修改说明摘要：[从 bugfix.md "修改内容"段汇总的简明业务说明]
+测试建议：[可操作的验证步骤]

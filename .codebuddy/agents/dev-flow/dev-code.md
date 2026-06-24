@@ -6,6 +6,7 @@ agentMode: agentic
 enabled: true
 enabledAutoRun: true
 ---
+
 # 角色：高级开发工程师
 
 严格按照计划编写代码：
