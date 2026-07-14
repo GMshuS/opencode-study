@@ -46,6 +46,7 @@ SET $DOC_PATH = ./bugfix-flow/$DATE/bugfix-$BUGFIX_ID
 ```json
 { "status": "analyzing", "problem": "<问题描述>", "attempt": 1 }
 ```
+设置 `$ATTEMPT = 1`。
 
 ### 5. 加载编码规范
 
@@ -58,45 +59,33 @@ SET $DOC_PATH = ./bugfix-flow/$DATE/bugfix-$BUGFIX_ID
 ### 步骤1：问题分析
 
 设置 `$ROUND_COUNT` 为内存变量（初始为 1，恢复时默认 1）。
+状态文件中的 `attempt` 记录全局修复尝试次数（每次 reopened +1），`$ROUND_COUNT` 记录当前 attempt 内的方案确认轮次（1-5，确认后重置）。两者独立计数，互不影响。
 
 **分析流程**（根据入口和轮次调整深度）：
 
 - **从 `reopened` 状态进入**（重开修复入口）：
-  1. `attempt += 1`；若 `attempt > 3` → 更新 state `{ ..., status: "cancelled" }`，终止并上报「多次修复仍未解决，请人工介入」
-  2. 自动加载上一轮上下文：
-     - 读取 `fix-plan.md`（或 `fix-plan-v{attempt-1}.md`）
-     - 读取 `fix-result.md`（或 `fix-result-v{attempt-1}.md`）
-     - 读取 `errors.log`（若存在）
-  3. 记录版本号：设置 `$ATTEMPT = {attempt}`
-  4. 更新 state：`{ ..., status: "reopened" }`
-  5. **执行定向补充分析**——以历史方案和用户反馈为输入，聚焦分析「修复未生效的原因」，无需重新阅读完整业务逻辑
+   1. `attempt += 1`；若 `attempt > 3` → 更新 state `{ ..., status: "cancelled" }`，终止并上报「多次修复仍未解决，请人工介入」
+   2. 自动加载上一轮上下文：
+      - 读取 `fix-plan-v{attempt-1}.md`
+      - 读取 `fix-result-v{attempt-1}.md`
+      - 读取 `errors.log`（若存在）
+   3. 记录版本号：设置 `$ATTEMPT = {attempt}`
+   4. 更新 state：`{ ..., status: "reopened" }`
+   5. **执行定向补充分析**——以历史方案和用户反馈为输入，聚焦分析「修复未生效的原因」，无需重新阅读完整业务逻辑
 - **从其他状态进入**（首次或方案修改后重入）：
   - 第 1 轮：完整分析——阅读代码、理解业务逻辑、定位根因、评估影响范围
   - 第 2~5 轮：定向补充——仅针对用户上一轮的反馈（缩小范围 / 方案不可行 / 新线索）做聚焦分析
 
-**输出修复方案**（每轮均展示更新后的完整方案）：
-```markdown
-# 修复方案
+**输出修复方案**：
 
-## 根因分析
-[精简的根因说明]
+1. 将完整修复方案（含根因分析、问题复现流程、修改点列表及 diff、影响范围）写入 `$DOC_PATH/fix-plan-v{$ATTEMPT}.md`
+2. 屏幕仅展示精简摘要，不再输出完整方案内容：
 
-## 问题复现流程
-[导致问题的代码调用流程 / 复现步骤]
-
-## 修改点列表
-每个修改点必须输出 diff 代码块（修改前后对比），仅写文字说明视为无效。
-- **[文件 1]**：[修改说明]
-    ```diff
-      <保留行>
-    - <删除行>
-    + <新增行>
-      <保留行>
-    ```
-
-## 影响范围
-[影响评估]
-
+```
+## 修复方案摘要
+**根因**：[一句话根因说明]
+**修改**：[文件数] 个文件，[修改点数] 处修改
+**方案文件**：`$DOC_PATH/fix-plan-v{$ATTEMPT}.md`
 ```
 
 更新 state：`{ ..., status: "analyzed" }`。
@@ -113,9 +102,6 @@ SET $DOC_PATH = ./bugfix-flow/$DATE/bugfix-$BUGFIX_ID
 
 **根据用户反馈**：
 - **确认执行** →
-  - 将方案写入文件（根据版本记录决定文件名）：
-    - 若为首次修复（`$ATTEMPT` 为空或 1）：保存到 `$DOC_PATH/fix-plan.md`
-    - 若为多次修复（`$ATTEMPT > 1`）：保存到 `$DOC_PATH/fix-plan-v{$ATTEMPT}.md`
   - 更新 state：`{ ..., status: "confirmed" }`，进入步骤 2
 - **修改方案** →
    - `$ROUND_COUNT += 1`
@@ -133,10 +119,10 @@ $MODIFIED_FILES = []
 ```
 
 **执行内容**：
-1. 按确认的修复方案（`fix-plan.md` 或 `fix-plan-v{$ATTEMPT}.md`，`$ATTEMPT` 由确认步骤记录）修改代码
+1. 按确认的修复方案（`fix-plan-v{$ATTEMPT}.md`，`$ATTEMPT` 由确认步骤记录）修改代码
 2. 每次修改文件后，将文件路径追加到 `$MODIFIED_FILES`（若已存在则跳过）
 
-更新 state：`{ ..., status: "fixing" }`。
+更新 state：`{ ..., status: "fixed" }`。
 
 ---
 
@@ -161,13 +147,13 @@ $MODIFIED_FILES = []
 1. **生成提交信息**
    - 从修复产出的报告文件机械提取 commit message 素材：
      - 问题来源：从 `.flow-state.json` 的 `problem` 字段提取（用户原始问题描述摘要）
-     - 问题原因：从 `fix-plan.md` "根因分析"段提取（精简到 1-2 句）
-     - 修改说明：从 `fix-plan.md` "修改点列表"段汇总简明实现说明（面向业务，不贴 diff 代码）
-     - 测试建议：从 `fix-plan.md` "影响范围"段提取，补充可操作的验证步骤
+     - 问题原因：从 `fix-plan-v{$ATTEMPT}.md` "根因分析"段提取（精简到 1-2 句）
+     - 修改说明：从 `fix-plan-v{$ATTEMPT}.md` "修改点列表"段汇总简明实现说明（面向业务，不贴 diff 代码）
+     - 测试建议：从 `fix-plan-v{$ATTEMPT}.md` "影响范围"段提取，补充可操作的验证步骤
    - 按格式写入 `$DOC_PATH/commit-msg.txt`
 2. 将 `$MODIFIED_FILES` 追加到 `$DOC_PATH/commit-msg.txt`
 3. 更新 state：`{ ..., status: "delivered" }`
-4. 写入 `$DOC_PATH/fix-result.md`，内容要求如下：
+4. 写入 `$DOC_PATH/fix-result-v{$ATTEMPT}.md`，内容要求如下：
     ```markdown
     # Bug 修复结果
 
@@ -202,29 +188,28 @@ $MODIFIED_FILES = []
     ────────────────────────────────────────
     ```
     其中 `$ATTEMPT_TAG`：若 `attempt == 1` 为空，否则为 ` (第{attempt}次修复)`。
-    `$VERSION_TAG`：若 `attempt == 1` 为空，否则为 `-v{attempt}`。
+    `$VERSION_TAG`：固定为 `-v{$ATTEMPT}`。
 
     **等待用户确认**，不主动结束对话：
     - **"问题已解决"** → 终结，不再等待
-    - **"仍存在问题"** → 更新 state：`{ ..., status: "reopened" }`，跳转回 **步骤 1（问题分析）**
+    - **"仍存在问题"** → 按以下规范处理：
+      1. 先解释/回答用户的疑问
+      2. 主动询问：「这是小幅调整还是根本性问题？」
+      3. **小幅调整** → 直接修改代码，不增加 attempt，保持 state 为 "delivered"，修改完成后回到步骤4 重新展示确认提示
+      4. **根本性问题** → 更新 state：`{ ..., status: "reopened" }`，跳转回 **步骤 1（问题分析）**
+      5. 不得在未得到用户明确表态前直接修改代码
     - **"关闭"** → 终结，不再等待
 ---
 
 ## 状态文件生命周期
 
-```
-.flow-state.json 贯穿全流程（直接写入）：
-  初始化   → { status: "analyzing",  problem: "<问题描述>", attempt: 1 }
-  分析完成  → { status: "analyzed",   problem: "...",       attempt: $ATTEMPT }
-  方案确认  → { status: "confirmed",  problem: "...",       attempt: $ATTEMPT }
-  方案终止  → { status: "cancelled",  problem: "...",       attempt: $ATTEMPT }
-  执行修复  → { status: "fixing",     problem: "...",       attempt: $ATTEMPT }
-  交付完成  → { status: "delivered",  problem: "...",       attempt: $ATTEMPT }
-  重开修复  → { status: "reopened",   problem: "...",       attempt: $ATTEMPT }
-
-状态流转路径：
-   delivered ──(用户反馈"仍存在问题")──→ reopened ──→ 步骤1（重开）──→ ...
-  delivered ──(用户描述新问题)──→ 建议新建独立 BUGFIX_ID
-  delivered ──(用户关闭)──→ 终结
-```
+| status | 含义 | 流转 |
+|--------|------|------|
+| analyzing | 分析中 | → analyzed |
+| analyzed | 分析完成 | → confirmed / cancelled |
+| confirmed | 方案确认 | → fixed |
+| fixed | 已修复 | → delivered |
+| delivered | 交付完成 | → reopened / 终结 |
+| reopened | 用户反馈"仍存在问题" | → analyzing（定向补充分析） |
+| cancelled | 已终止 | 终态 |
 ---
