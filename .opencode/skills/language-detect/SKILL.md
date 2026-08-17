@@ -18,6 +18,8 @@ description: 通过项目文件自动检测编程语言并加载对应的编码�
   → **Go** → 加载 `go-coding-standards`
 - `CMakeLists.txt` / `Makefile` / `*.c` / `*.cpp` / `*.h` / `*.hpp` / `*.cc` / `*.cxx`
   → **C/C++** → 加载 `c-cpp-coding-standards`
+- `*.sql` / `*.ddl` / `*.dml` / `migrations/*`
+  → **SQL** → 加载 `sql-coding-standards`
 
 ## 多语言项目
 
