@@ -1,4 +1,4 @@
----
+﻿---
 description: 根据开发计划编写业务代码、接口、组件
 mode: subagent
 name: dev-code
@@ -14,7 +14,7 @@ permissions:
   edit: allow
   bash:
     "*": "allow"
-model: opencode-go/deepseek-v4-flash
+model: opencode/deepseek-v4-flash-free
 ---
 
 # 角色：高级开发工程师

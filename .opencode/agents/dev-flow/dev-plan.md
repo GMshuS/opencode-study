@@ -1,4 +1,4 @@
----
+﻿---
 description: 需求分析、开发计划拆解、架构设计、任务拆分
 mode: subagent
 name: dev-plan
@@ -9,7 +9,7 @@ tools:
   edit: true
   bash: false
   webfetch: true
-model: opencode-go/deepseek-v4-pro
+model: opencode/deepseek-v4-flash-free
 ---
 
 # 角色：专业架构师&计划员
@@ -44,9 +44,9 @@ model: opencode-go/deepseek-v4-pro
 ## 步骤3：批次分组计算
 
 **容量阈值**（单批次上限，三者取最先达限的）：
-- `BATCH_MAX_LOC = 500`    # 最大 Δ代码量（行）
-- `BATCH_MAX_FILES = 10`   # 最大改动文件数
-- `BATCH_MAX_HOURS = 6`    # 最大预估工时（h）
+- `BATCH_MAX_LOC = 1000`    # 最大 Δ代码量（行）
+- `BATCH_MAX_FILES = 20`   # 最大改动文件数
+- `BATCH_MAX_HOURS = 10`    # 最大预估工时（h）
 
 1. 从所有任务的 `依赖:` 字段构建依赖图
 2. 拓扑分层（Level-0 无依赖任务 → Level-1 → … → Level-N）

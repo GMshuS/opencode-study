@@ -1,4 +1,4 @@
----
+﻿---
 description: 代码质量审查、编译测试、安全检测、优化建议
 mode: subagent
 name: dev-review
@@ -12,7 +12,7 @@ permissions:
   all: ask
   bash:
     "*": "allow"
-model: opencode-go/deepseek-v4-flash
+model: opencode/deepseek-v4-flash-free
 ---
 
 # 角色：代码审查专家

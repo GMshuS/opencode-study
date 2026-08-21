@@ -1,4 +1,4 @@
----
+﻿---
 description: 排查代码BUG、逻辑错误、异常问题，精准修复
 mode: subagent
 name: dev-bugfix
@@ -12,7 +12,7 @@ permissions:
   edit: allow
   bash:
     "*": "allow"
-model: opencode-go/deepseek-v4-flash
+model: opencode/deepseek-v4-flash-free
 ---
 
 # 角色：资深调试与修复专家
@@ -85,3 +85,4 @@ model: opencode-go/deepseek-v4-flash
 修复状态：【已修复 / 部分修复 / 无法修复】
 已修复问题：C-001, M-002
 修改文件：file1, file2
+

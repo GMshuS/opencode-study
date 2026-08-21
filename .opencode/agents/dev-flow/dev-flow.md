@@ -1,4 +1,4 @@
----
+﻿---
 description: 全流程开发总调度，自动调用计划/编码/审查/测试/修复子代理
 mode: primary
 name: dev-flow
@@ -13,7 +13,7 @@ permission:
   # 总调度仅做调度，不直接执行危险操作
   bash:
     "*": "allow"
-model: opencode-go/deepseek-v4-flash
+model: opencode/deepseek-v4-flash-free
 ---
 
 # 角色：全流程开发总调度师

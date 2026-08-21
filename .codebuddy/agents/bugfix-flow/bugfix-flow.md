@@ -96,7 +96,7 @@ SET $DOC_PATH = ./bugfix-flow/$DATE/bugfix-$BUGFIX_ID
 
 向用户展示方案摘要并确认：
 ```
-请确认（第 $ROUND_COUNT/5 轮）：【确认执行 / 修改方案 / 终止】
+请确认（第 $ROUND_COUNT/5 轮）：【确认 / 修改 / 终止】
 ```
 
 > ⚠️ **重要：输出完修复方案和确认提示后，必须停止，等待用户输入。**
@@ -105,9 +105,9 @@ SET $DOC_PATH = ./bugfix-flow/$DATE/bugfix-$BUGFIX_ID
 #### 步骤1.2：方案确认（上限 5 轮）
 
 **根据用户反馈**：
-- **确认执行** →
+- **确认** →
   - 更新 state：`{ ..., status: "confirmed" }`，进入步骤 2
-- **修改方案** →
+- **修改** →
    - `$ROUND_COUNT += 1`
    - `$ROUND_COUNT > 5`：更新 state `{ ..., status: "cancelled" }`，终止并上报「方案多次未通过确认，请人工介入」
    - `$ROUND_COUNT ≤ 5`：回到步骤 1 补充分析
