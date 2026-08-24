@@ -1,517 +1,322 @@
-# review-flow 代码审查全流程设计文档
+# review-flow Agent 设计文档
 
-## 1. 概述
+> Agent 定义：`.opencode/agents/review-flow/review-flow.md`（主调度）+ 同目录下 `review-flow-review.md`（审查子代理）/ `review-flow-fix.md`（修复子代理）
+> 命令入口：`.opencode/commands/review-flow/review-flow.md`（`/review-flow <审查目标路径>`）
 
-review-flow 是一套基于 Master-Agent 模式的 AI 驱动代码审查全流程框架，覆盖从多维审查到修复交付的完整闭环。它专注于**已有代码的质量审查**，而非新功能开发。
+---
 
-### 核心价值
+## 1. 概述与核心设计原则
 
-- **审查→修复闭环**：审查 → 方案确认 → 精准修复 → 验证 → 交付，审查不通过则自动进入修复循环
-- **故障可恢复**：状态文件（原子写入）+ 会话统一管理，支持 crash 后恢复
-- **质量分层验证**：review-flow-review 执行完整构建验证（build-verify），review-flow-fix 执行轻量编译自检
-- **文件即契约**：子 agent 之间通过文件通信，review-flow 不进行字段级解析
-- **人工可控**：方案确认环节强制用户决策，修复范围由用户选择，所有异常路径均有上报人工介入的逃生口
+### 1.1 概述
 
-### 与 dev-flow 的区别
+review-flow 是一个**多 Agent 编排式**的代码审查与修复管线，覆盖存量代码从审查到修复交付的完整生命周期：
 
-| 维度 | dev-flow | review-flow |
-|------|----------|-------------|
-| 场景 | 新功能开发（需求→编码→审查→交付） | 已有代码审查（审查→修复→交付） |
-| 输入 | 功能名称 / 需求描述 | 目录/文件路径 |
-| 产出 | plan.md + code.md + review.md + bugfix.md | review.md + bugfix.md + summary.md + commit-msg.txt |
-| 修复循环 | dev-review → dev-bugfix → 重新审查（3轮） | review-flow-fix → 核验（3轮，不再重新全量审查） |
-| 编码环节 | 有（dev-code） | 无 |
-| 规划环节 | 有（dev-plan） | 无 |
+```text
+代码审查 → 分级问题清单 → 方案确认 → 选择修复范围 → 最小化修复(循环) → 验证交付
+```
+
+用户只需一条命令即可启动：
+
+```bash
+/review-flow src/                      # 审查整个目录
+/review-flow src/auth.ts src/models/   # 或指定若干文件
+```
+
+主 Agent `review-flow` 本身**不懂代码**——五条红线禁止它读源码、扫目录、定范围、代执行、解析报告。它只做三件事：把用户原始指令透传给审查子代理、根据返回摘要与用户表态决定下一步、归集摘要生成交付件。所有技术判断都发生在子代理内部。
+
+### 1.2 与 dev-flow / bugfix-flow 的定位对比
+
+| 维度 | review-flow（本文档） | dev-flow | bugfix-flow |
+|------|----------------------|----------|-------------|
+| 适用场景 | 存量代码审查 + 定向修复 | 从零开发完整功能 | 已知单个 Bug 修复 |
+| 输入 | 审查目标路径 | 需求描述或文档路径 | 问题描述 |
+| 架构模式 | 多 Agent 编排（1 主 + 2 子） | 多 Agent 编排（1 主 + 4 子） | 单 Agent 内联 |
+| 核心产出 | review.md + bugfix.md + summary.md | plan/code/review 全套产物 | fix-plan / fix-result |
+| 特色机制 | 问题分级自选修复、仅报告模式、SSOT 双向读写 | 批次预计算、全量终检 | 版本化产物、reopen |
+
+### 1.3 核心设计原则
+
+| # | 原则 | 说明 |
+|---|------|------|
+| P1 | 纯调度器 + 五条红线 | review-flow作为主Agent，不读任何源码、不扫描项目结构、不自定审查范围、不代替子代理执行、不读取子代理报告文件——违反立即终止并输出 `SELF_CHECK_FAILED` |
+| P2 | 文件即契约 | 子Agent间通过 `$DOC_PATH/` 下文件接力，主 Agent 不做字段级解析；**review.md 是唯一真理来源（SSOT）**，增减字段只需改对应子代理定义，无需动 review-flow |
+| P3 | 范围自治 | 审查范围由 review-flow-review 自行决策，review-flow 仅透传用户原始指令 |
+| P4 | 双人工门禁 | 门禁① 方案确认、门禁② 修复范围选择——未经用户表态不动一行代码 |
+| P5 | 有限重试 | 两层上限兜底：方案确认 ≤5 轮、修复重试 ≤2 次（累计最多 3 次修复调用），超限一律上报「请人工介入」 |
+| P6 | 产物与代码分离 | 报告统一写入 `./review-flow/$SESSION_ID/` 运行目录，按会话隔离，不污染源码目录 |
+| P7 | 机械可追溯 | summary.md 与 commit-msg.txt 均从子代理返回摘要机械提取，不引入主观再创作 |
 
 ---
 
 ## 2. 架构设计
 
-### 2.1 主从代理模式（Master-Agent）
+### 2.1 多 Agent 架构总览
 
+命令入口只做空参校验与转发；主 Agent 负责编排与门禁交互；2 个子代理各司其职；语言规范与构建验证两项专项能力委托给 Skill。
+
+```mermaid
+flowchart LR
+    U(["用户"]) -->|"/review-flow src/"| CMD["commands/review-flow<br/>空参校验 · 转发"]
+    CMD -->|"agent: review-flow"| MF["review-flow 主 Agent<br/>primary · temp 0.2<br/>纯调度：传参/决策/汇总"]
+
+    MF -->|"步骤1 原始指令透传"| R["review-flow-review<br/>subagent · temp 0.4<br/>多维审查 · 只读源码"]
+    MF -->|"步骤2 待修复问题集"| B["review-flow-fix<br/>subagent · temp 0.3<br/>最小化修复"]
+
+    subgraph SK["Skill 委托"]
+        LD["language-detect"]
+        CS["coding-standards"]
+        BV["build-verify"]
+    end
+
+    R -.->|"探测语言 · 加载规范"| LD
+    B -.->|"加载规范"| CS
+    R & B -.->|"构建 + 类型 + Linter"| BV
+
+    FS[("review-flow/$SESSION_ID/<br/>.flow-state.json 等 5 类产物")]
+    MF <-->|"建目录 · 写状态 · 汇总交付"| FS
+    R <-->|"覆盖写 review.md"| FS
+    B <-->|"读 review.md · 追加 bugfix.md"| FS
 ```
-                         ┌──────────────────────┐
-                         │   review-flow         │  ← Primary Agent（总调度）
-                         │   流程编排 / 状态管理    │
-                         └──┬──────────────┬────┘
-                            │              │
-                     ┌──────┘              └──────────┐
-                     ▼                                ▼
-             ┌──────────────────┐           ┌─────────────────┐
-             │review-flow-review│           │ review-flow-fix  │
-             │   代码审查专家     │           │  调试与修复专家   │
-             │   只读 + 验证     │           │   读写 + 编译自检  │
-             │   subagent       │           │   subagent       │
-             └──────────────────┘           └─────────────────┘
+
+**职责分工一览**：
+
+| Agent | mode | 一句话职责 | 明确不做 |
+|-------|------|-----------|---------|
+| review-flow | primary | 传参、门禁交互、状态机流转、机械核验、汇总交付 | 读源码、定范围、解析报告内容 |
+| review-flow-review | subagent | 范围决策、多维审查、分级问题清单 + 修复方案 + 验证清单 | 修改项目代码（edit 禁用） |
+| review-flow-fix | subagent | 按 FixPlan 最小化修复、编译自检、更新验证清单 | 引入新功能、重构无关代码 |
+
+### 2.2 通信架构：文件即契约
+
+子代理之间**不直接对话、不共享上下文**，全部通过 `$DOC_PATH/` 下的文件接力。review-flow 不解析报告内容，只在 prompt 中传递原始指令和问题 ID 集合。
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as 用户
+    participant F as review-flow
+    participant R as review-flow-review
+    participant B as review-flow-fix
+    participant FS as 报告文件($DOC_PATH/)
+
+    F->>F: 初始化 SESSION_ID · 建目录 · status=reviewing
+    F->>R: 用户原始指令（审查范围透传）
+    R->>FS: 覆盖写 review.md（问题清单+修复方案+验证清单）
+    R-->>F: 摘要：结论 / 问题表 / 统计 / 验证清单
+    F->>U: 门禁① 展示摘要（批准 / 修改 / 终止，≤5 轮）
+    U-->>F: 批准
+    F->>U: 门禁② 展示分级问题清单，选择修复范围
+    U-->>F: ID / 级别 / all / 仅报告
+
+    alt 仅输出报告
+        F->>F: status=delivered · 结束
+    else 进入修复
+        loop 核验失败且重试未达上限
+            F->>B: 待修复问题（ID 或级别集合）
+            B->>FS: 读 review.md → 改码 → 追加 bugfix.md → 勾选验证清单
+            B-->>F: 摘要：修复状态 / 已修复 ID / N-M 通过 / 修改文件
+            F->>F: 机械核验（对照 SELECTED_ISSUES）
+        end
+        F->>FS: 写 summary.md + commit-msg.txt
+        F->>U: delivered · 提示 /git-autocommit
+    end
 ```
 
-### 2.2 组件角色矩阵
+**信息契约表**（review-flow 视角，只关心路径与摘要状态字段）：
 
-| 组件 | 模式 | 读写 | Bash | 温度 | 职责 |
-|------|------|------|------|------|------|
-| **review-flow** | primary | 读写 | 完整 | 0.1 | 流程总调度，状态管理，subagent 编排，交付汇总 |
-| **review-flow-review** | subagent | 只读 | 完整 | 0.1 | 多维代码审查（架构/安全/质量等），生成分级问题清单+修复方案+验证清单 |
-| **review-flow-fix** | subagent | 读写 | 受限 | 0.1 | 按修复方案实施最小化修复，编译自检，更新验证清单 |
+| 步骤 | 子代理 | review-flow 传入 | 子代理自行读取/决策 | 写回文件 | 返回摘要关键字段 |
+|------|--------|-----------------|--------------------| ---------|----------------|
+| 审查 | @review-flow-review | 用户原始指令（原样透传） | 审查目标源码、language-detect / 编码规范 / build-verify skills、默认范围自行扫描决策 | `review.md`（覆盖） | 审查结论 / 范围 / 规范 / 问题清单（ID·级别·描述·位置）及分级统计 / 验证清单 |
+| 修复 | @review-flow-fix | 待修复问题集合（ID / 级别 / all） | `review.md`（SSOT）、源码上下文、build-verify | `bugfix.md`（追加）+ 勾选 `review.md` 验证清单 | 修复状态 / 已修复 ID / 编译自检 / 验证清单 N-M / 修改文件列表 / 原因·说明·测试建议摘要 |
 
-### 2.3 核心设计原则
+> 一致性保障：如需增减字段，只需改对应子代理的定义文件，review-flow 无需变更——因为它从不解析报告内容，只消费子代理返回的摘要文本。
 
-1. **文件即契约**：子 agent 的输出格式在其定义文件中约定，review-flow 仅做摘要提取和核验，不进行字段级解析
-2. **修改只影响一点**：如需调整输出字段，只需修改对应子 agent 的定义文件，不影响 review-flow 主控逻辑
-3. **幂等性**：每个步骤可重复执行，状态文件确保流程连续性
-4. **最小权限**：review-flow-review 为只读（write: false, edit: false），不修改任何源码
-5. **最小化修复**：review-flow-fix 只修复选定的问题，不重构无关代码，不引入新功能
-6. **人工兜底**：方案确认/修复范围选择由用户决策，所有自动化路径均有上报人工介入的逃生口
-7. **状态持久化**：JSON 状态文件全部采用 tmp + rename 原子写入，防止 crash 后文件损坏
+### 2.3 目录结构
+
+**静态定义**（仓库内）：
+
+```text
+.opencode/
+├── agents/review-flow/
+│   ├── review-flow.md          # 主调度 Agent（frontmatter 配置 + 流程提示词）
+│   ├── review-flow-review.md   # 子代理：多维审查 + 分级问题清单
+│   └── review-flow-fix.md      # 子代理：最小化修复 + 编译自检
+└── commands/review-flow/
+    └── review-flow.md          # 命令入口：空参输出用法，否则转发 @review-flow
+```
+
+**运行产物**（项目根下按需生成，按会话隔离）：
+
+```text
+./review-flow/
+└── 20260824_143025/           # $SESSION_ID，格式 YYYYMMDD_HHMMSS
+    ├── .flow-state.json       # 流程状态（断点校验依据）
+    ├── review.md              # 审查报告 = SSOT（每轮覆盖；fix 会勾选其中验证清单）
+    ├── bugfix.md              # 修复报告（追加累积多轮）
+    ├── summary.md             # 交付汇总：审查概览 + 验证结果
+    └── commit-msg.txt         # 四段式提交信息（仅有代码修改时生成）
+```
+
+| 产物文件 | 写入者 | 写入时机 | 作用 |
+|----------|--------|----------|------|
+| `.flow-state.json` | review-flow | 每次状态变化 | 记录 `status`，重启后据此校验会话是否干净 |
+| `review.md` | review-flow-review（覆盖）<br>review-flow-fix（勾选复选框） | 每轮审查覆盖；修复后更新 | SSOT：问题清单（含修复前后 diff）+ 修复方案 + 验证清单，被 review 与 fix 双向读写 |
+| `bugfix.md` | review-flow-fix | 每轮修复追加 | 修复记录累积：已修复/未修复问题、修改文件、验证结果 |
+| `summary.md` | review-flow | 步骤3 交付时 | 会话概览（范围、问题统计、已修复/未修复、涉及文件）+ 验证结论 |
+| `commit-msg.txt` | review-flow | 有修改的交付时 | 四段式提交信息（来源/原因/修改说明/测试建议），配合 `/git-autocommit` |
+
+### 2.4 配置属性
+
+三个 Agent 的 frontmatter 对比：
+
+| 配置项 | review-flow | review-flow-review | review-flow-fix |
+|--------|-------------|--------------------|-----------------|
+| `mode` | **primary** | subagent | subagent |
+| `temperature` | **0.2** | **0.4** | 0.3 |
+| read / write / edit / bash | ✓ / ✓ / ✓ / ✓ | ✓ / ✓ / **✗** / ✓ | ✓ / ✓ / ✓ / ✓ |
+| `webfetch` | ✓ | ✗ | ✗ |
+| `permissions` | bash 全放行 | **all: ask** + write 放行 + bash 放行 | edit / bash 放行 |
+| `model` | opencode-go/deepseek-v4-flash | 同左 | 同左 |
+
+**温度梯度设计意图**——按"创造性需求"递增分配：
+
+```text
+review-flow        0.2 ── 调度与转述需稳定，低发散保证流程确定性与门禁判断一致
+review-flow-fix    0.3 ── 在"最小改动"约束内保留灵活度，尝试替代修复方案
+review-flow-review 0.4 ── 审查需要最大发散度，主动发掘清单之外的问题
+```
+
+**权限取舍说明**：
+
+- review-flow 的 bash 全放行但红线严禁读源码——它只需要 `date` / `mkdir` / `echo` 等机械命令；
+- review-flow-review 是唯一 `edit: false` 的角色——只读源码不改码，写权限仅限 `review.md`；`all: ask` 兜底（bash 显式放行用于跑构建验证）；
+- review-flow-fix 允许 edit——它是唯一实际修改项目源码的角色；
+- 三个角色均不共享上下文，一切以 `$DOC_PATH/` 文件为准。
 
 ---
 
 ## 3. 工作流详解
 
-### 3.1 完整流程
+### 3.1 总体流程
 
+```mermaid
+flowchart TD
+    START(["/review-flow 审查目标"]) --> INIT["初始化（禁止探索）<br/>SESSION_ID=YYYYMMDD_HHMMSS · 建目录<br/>写状态 reviewing · 校验旧状态"]
+    INIT --> CHK{"状态检查"}
+    CHK -->|"不存在 / delivered"| S1["步骤1 调用 review-flow-review<br/>透传原始指令 · status=reviewed"]
+    CHK -->|"JSON 损坏"| ERR1(["终止：状态文件损坏，请人工介入"])
+    CHK -->|"其他未完成状态"| ERR2(["终止：上次流程未完成<br/>请先清理目录后重试"])
+
+    S1 --> G1{"门禁① 方案确认<br/>第 R/5 轮"}
+    G1 -->|"批准"| SEL
+    G1 -->|"修改意见"| REV["status=review-revising<br/>携意见重调 review-flow-review"] --> G1
+    G1 -->|"终止 / 超 5 轮"| CX(["cancelled 请人工介入"])
+
+    SEL["门禁② 选择修复范围<br/>展示 ID/级别/描述 问题清单"] --> MODE{"用户选择"}
+    MODE -->|"仅输出报告"| REP(["delivered 仅报告交付"])
+    MODE -->|"ID / 级别 / all"| FIX["步骤2 调用 review-flow-fix<br/>传问题集 · status=fixed"]
+    FIX --> VER["步骤2.3 机械核验：<br/>修复状态 · 已修复 ID 对照<br/>编译自检 · 验证清单逐项"]
+    VER -->|"无法修复"| FL(["failed 请人工介入"])
+    VER -->|"全部通过"| VF["status=verified"]
+    VER -->|"有失败项"| ITER{"重试已达上限？<br/>FIX_ITERATION ≥ 2"}
+    ITER -->|"否"| RT["status=fix-retrying<br/>确定新一轮问题集（遗漏/失败项）<br/>重调 review-flow-fix"] --> FIX
+    ITER -->|"是"| FL2(["failed 多次修复未通过<br/>展示失败项+回滚命令提示<br/>请人工介入"])
+
+    VF --> DLV["步骤3 交付<br/>终检验证清单（残留项标『待人工确认』）<br/>写 summary.md + commit-msg.txt"]
+    DLV --> DONE(["delivered 提示 /git-autocommit"])
 ```
-用户触发 /review-flow
-   │
-   ▼
-┌──────────────────────────────────────────────────────────┐
-│ 初始化                                                    │
-│  • 生成 SESSION_ID（时间戳格式：YYYYmmdd_HHMMSS）          │
-│  • 设置 $DOC_PATH = ./review-flow/$SESSION_ID             │
-│  • 创建输出目录                                            │
-│  • 询问用户并确定审查目录/文件路径，写入 targets.md          │
-│  • 原子创建 .flow-state.json（{iteration:0, status:"reviewing"}）│
-│  • 校验状态文件 JSON 完整性                                 │
-└──────────────────────────┬───────────────────────────────┘
-                           │
-                           ▼
-┌──────────────────────────────────────────────────────────┐
-│ 阶段1：代码审查与修复方案                                    │
-│  • 调用 @review-flow-review                               │
-│  • 结果写入 review.md（含问题清单 + 修复方案 + 验证清单）    │
-│  • 更新状态：reviewed                                      │
-│                                                          │
-│ ┌── 方案确认循环（最多 5 轮） ──────────────────────────┐  │
-│ │  • 展示摘要：审查范围 / 代码优点 / 问题清单 / 修复方案   │  │
-│ │  • 用户选择：批准 / 修改 / 终止                        │  │
-│ │    ├── 批准 → status: "plan-confirmed"                 │  │
-│ │    ├── 修改 → status: "plan-revising" → 重新审查（≤5轮）│  │
-│ │    └── 终止 → status: "cancelled"，终止流程            │  │
-│ └──────────────────────────────────────────────────────┘  │
-└──────────────────────────┬───────────────────────────────┘
-                           │
-                           ▼
-┌──────────────────────────────────────────────────────────┐
-│ 阶段2：修复实施与验证（最多 3 轮）                           │
-│  • 初始化 $FIX_ITERATION = 0                              │
-│                                                          │
-│ ┌── 2.1 确定修复范围 ──────────────────────────────────┐  │
-│ │  • 展示问题清单（ID / 级别 / 描述）                     │  │
-│ │  • 用户选择：按编号 / 按级别 / 全部 / 仅输出报告        │  │
-│ │  • 记录 $SELECTED_ISSUES                               │  │
-│ └──────────────────────────────────────────────────────┘  │
-│                                                          │
-│ ┌── 2.2 执行修复 ──────────────────────────────────────┐  │
-│ │  • 调用 @review-flow-fix（传入待修复问题集）            │  │
-│ │  • 结果写入 bugfix.md                                  │  │
-│ │  • 更新状态：fixed（iteration = $FIX_ITERATION）        │  │
-│ └──────────────────────────────────────────────────────┘  │
-│                                                          │
-│ ┌── 2.3 核验与循环判定 ────────────────────────────────┐  │
-│ │  • 修复状态：无法修复 → status: "failed"，终止          │  │
-│ │  • 对照 $SELECTED_ISSUES 与已修复 ID 列表，记录遗漏项   │  │
-│ │  • 检查编译自检结果                                     │  │
-│ │  • 检查验证清单中 - [ ] 是否全变为 - [x]                │  │
-│ │  • 全部通过 → status: "verified"，进入阶段3            │  │
-│ │  • 存在失败 & iteration < 2 → iteration+1, 重新修复     │  │
-│ │  • 存在失败 & iteration >= 2 → status: "failed"，终止   │  │
-│ └──────────────────────────────────────────────────────┘  │
-└──────────────────────────┬───────────────────────────────┘
-                           │
-                           ▼
-┌──────────────────────────────────────────────────────────┐
-│ 阶段3：交付成果                                           │
-│  • 执行验证清单终检（全部 - [x]？）                        │
-│  • 生成 summary.md（审查概览 + 验证结果）                  │
-│  • 生成 commit-msg.txt（问题来源/原因/修改说明/测试建议）    │
-│  • 更新状态：delivered                                    │
-│  • 提示用户可通过 @git-autocommit 提交                    │
-└──────────────────────────────────────────────────────────┘
-```
+
+各阶段要点：
+
+| 阶段 | 核心动作 | 关键约束 |
+|------|----------|----------|
+| 初始化 | 秒级时间戳生成会话 ID → 建目录 → 写状态文件 → 校验旧状态 | **禁止探索**：禁 Read/Glob/Grep/bash（date 除外），范围由 review-flow-review 决策 |
+| 步骤1 审查 | 透传原始指令，调用 review-flow-review 写 review.md | 主 Agent 不预设范围、不读报告文件，仅消费返回摘要 |
+| 门禁① 方案确认 | 原样展示摘要，处理 批准/修改/终止 三种反馈 | 「修改」累计 ≤5 轮；只转述意见，不做技术评判 |
+| 门禁② 范围选择 | 展示问题清单表格供用户选择 | 四种输入：编号、级别、all、仅输出报告 |
+| 步骤2 修复核验 | 传问题集调用 review-flow-fix，对返回摘要机械核验 | 四要素：修复状态、已修复 ID 对照、编译自检、验证清单；重试 ≤2 次 |
+| 步骤3 交付 | 终检验证清单 → 写 summary.md → 生成 commit-msg.txt | 残留未通过项显式标记「待人工确认」，不静默丢弃 |
 
 ### 3.2 状态机
 
-```
-                    ┌──────────────────┐
-                    │  reviewing (0)    │ ← 初始化
-                    └────────┬─────────┘
-                             │ review-flow-review 完成
-                             ▼
-                    ┌──────────────────┐
-                    │   reviewed        │
-                    └────────┬─────────┘
-                             │ 阶段1 方案确认
-                             │
-                  ┌──────────┼────────────┐
-                  ▼          ▼            ▼
-           ┌──────────┐ ┌──────────┐ ┌──────────┐
-           │plan-conf.│ │plan-rev. │ │cancelled │
-           │ 批准      │ │ 修改     │ │ 终止      │
-           └────┬─────┘ └────┬─────┘ └──────────┘
-                │            │
-                │            └──→ 回退 reviewed
-                ▼
-           ┌──────────────────┐
-           │ plan-confirmed   │
-           └────────┬─────────┘
-                    │ 阶段2 选择修复范围 + review-flow-fix
-                    ▼
-           ┌──────────────────┐
-           │   fixed (N)      │ ← N = 0, 1, 2
-           └──┬───────────────┘
-              │ 核验
-    ┌─────────┴─────────┐
-    ▼                   ▼
-┌──────────────┐   ┌──────────────┐
-│  verified    │   │fix-retrying(N)│ ← N < 2，重新修复
-└──────┬───────┘   └──────┬───────┘
-       │                  │ N >= 2 ?
-       ▼                  ├── 否 → fixed(N+1)
-┌──────────────┐          └── 是 → failed
-│  delivered   │
-└──────────────┘
+共 10 个状态，`delivered` 为正常终态，`cancelled` / `failed` 为异常终态：
+
+```mermaid
+stateDiagram-v2
+    state "reviewing 审查中" as S1
+    state "reviewed 审查完成" as S2
+    state "review-revising 重审中" as SR
+    state "review-confirmed 已确认" as SC
+    state "fixed 已修复" as S3
+    state "fix-retrying 修复重试" as FR
+    state "verified 核验通过" as S4
+    state "delivered 已交付" as OK
+    state "cancelled 已终止" as CX
+    state "failed 失败" as FL
+
+    [*] --> S1 : 初始化完成
+    S1 --> S2 : review-flow-review 完成
+    S2 --> SC : 用户批准
+    S2 --> SR : 用户要求修改（≤5 轮）
+    SR --> S2 : 携意见重新审查
+    S2 --> CX : 用户终止 / 超 5 轮
+    S2 --> OK : 用户选择仅输出报告
+    SC --> S3 : review-flow-fix 完成
+    S3 --> S4 : 核验全部通过
+    S3 --> FR : 有失败项且未达上限
+    FR --> S3 : 重修完成回到核验
+    FR --> FL : 重试达上限（共 3 次调用）
+    S4 --> OK : 交付完成
+    CX --> [*]
+    FL --> [*]
+    OK --> [*]
 ```
 
-### 3.3 状态说明
+| status | 含义 | 允许流转 |
+|--------|------|----------|
+| `reviewing` | 审查进行中 | → reviewed |
+| `reviewed` | 本轮审查完成，待确认 | → review-confirmed / review-revising / cancelled / delivered（仅报告） |
+| `review-revising` | 用户要求修改方案 | → reviewed（携意见重审） |
+| `review-confirmed` | 方案已确认 | → fixed |
+| `fixed` | 本轮修复完成 | → verified / fix-retrying / failed（无法修复） |
+| `fix-retrying` | 修复重试中 | → fixed（回到核验） |
+| `verified` | 核验全部通过 | → delivered |
+| `delivered` | 交付完成 | **正常终态**（重启视为新流程） |
+| `cancelled` | 用户终止或确认超限 | 异常终态 |
+| `failed` | 修复超限或无法修复 | 异常终态（附失败项与回滚提示） |
 
-| 状态 | 说明 | 触发条件 |
-|------|------|---------|
-| `reviewing` | 初始化完成，审查中 | review-flow 启动 |
-| `reviewed` | 审查完成，等待方案确认 | review-flow-review 返回 |
-| `plan-confirmed` | 用户批准审查结果 | 阶段1 用户选择批准 |
-| `plan-revising` | 用户要求修改审查结果 | 阶段1 用户选择修改 |
-| `cancelled` | 用户终止流程 | 阶段1 用户选择终止 |
-| `fixed` | 修复完成（iteration=N） | review-flow-fix 返回 |
-| `fix-retrying` | 修复核验失败，重试中 | 核验未通过且 iteration < 2 |
-| `verified` | 修复核验通过 | 核验全部通过 |
-| `delivered` | 交付完成 | 阶段3 完成 |
-| `failed` | 超限终止（iteration≥2） | 修复循环超限或无法修复 |
+> 启动校验规则：读到 `delivered` 按新流程执行；读到其他任何状态 → 「上次流程未完成，请先清理目录」终止。由于 SESSION_ID 为秒级时间戳，每次运行天然获得全新目录，该校验属于防御性设计（如同秒撞目录等极端场景）。
 
----
+### 3.3 关键机制：双计数器
 
-## 4. 各 Agent 详述
+两个计数器独立运作、互不影响，防止无限循环：
 
-### 4.1 review-flow（总调度）
+| | `$CONFIRM_ROUND`（方案确认轮次） | `$FIX_ITERATION`（修复重试计数） |
+|--|--------------------------------|--------------------------------|
+| 含义 | 门禁① 内用户要求修改方案的累计次数 | 核验失败后重调 review-flow-fix 的次数 |
+| 初值 | 0 | 0 |
+| 递增时机 | 用户选择「修改」时 +1 | 核验存在失败项且未达上限时 +1 |
+| 上限 | **5 轮**，超出 → cancelled「请人工介入」 | **2 次**，达到即 → failed（首次修复 + 2 次重试 = 最多 3 次修复调用） |
+| 存储 | 内存变量 | 内存变量 |
 
-| 属性 | 值 |
-|------|-----|
-| 模式 | primary agent |
-| 温度 | 0.1 |
-| 权限 | 读写 + bash（完整）+ webfetch |
-| 关键配置 | bash: "*" allow |
+另有第三处独立上限：**修复声明「无法修复」直接置 `failed`**，不占用重试次数。
 
-**职责**：
-1. 启动时初始化会话 ID、输出目录、状态文件，校验完整性
-2. 与用户交互确定审查目标，写入 targets.md
-3. 编排 review-flow-review → 方案确认循环（≤5轮）→ review-flow-fix → 核验循环（≤3轮）→ 交付
-4. 管理修复循环计数（iteration），超限上报
-5. 方案确认环节从 review.md 提取摘要展示给用户
-6. 核验环节从 bugfix.md 提取关键字段进行验证判定
-7. 交付前生成 summary.md 和 commit-msg.txt
+### 3.4 错误处理与恢复
 
-**文件通信协议**：
+| 异常场景 | 检测点 | 处置动作 |
+|----------|--------|----------|
+| 状态文件 JSON 损坏 | 初始化校验解析失败 | 立即终止：「状态文件损坏，请人工介入」 |
+| 上次会话目录非干净状态 | 启动读到非 delivered 状态 | 终止：「请先清理目录后重试」 |
+| 方案连续 5 轮未获确认 | `$CONFIRM_ROUND` 达上限 | cancelled：「方案多次未通过确认，请人工介入」 |
+| 用户主动终止 | 门禁① 反馈「终止」 | cancelled，正常收尾 |
+| 修复声明无法修复 | 摘要「修复状态=无法修复」 | failed，立即终止 |
+| 修复核验反复失败 | `$FIX_ITERATION` 达上限 | failed：展示失败项 + 修改文件列表 + 手动回滚命令提示，「多次修复未通过，请人工介入」 |
+| 交付终检仍有未通过验证项 | 验证清单状态 | 不阻断交付：记入 summary.md 并标记「待人工确认」 |
+| 工具链不可用 | build-verify 内部降级 | 降级为静态检查继续验证，不允许跳过 |
 
-| 步骤 | 子 agent | 输出文件 | 写入策略 | 输入文件 |
-|------|---------|---------|---------|---------|
-| 审查 | review-flow-review | review.md | 覆盖 | targets.md |
-| 修复 | review-flow-fix | bugfix.md | 覆盖 | review.md |
+**容错设计的四个支点**：
 
-每次调用子 agent，必须将 $DOC_PATH 的实际值传入 prompt。输入文件由子 agent 自行读取，不通过上下文模板传递。
-
-**调用规范**：review-flow 仅传递 $DOC_PATH 和筛选条件（如待修复问题 ID 集合），**禁止传递字段级上下文**。
-
-### 4.2 review-flow-review（审查专家）
-
-| 属性 | 值 |
-|------|-----|
-| 模式 | subagent |
-| 温度 | 0.1 |
-| 权限 | 只读 + bash（完整） |
-| 关键配置 | write: false, edit: false, bash: "*" allow |
-
-**流程**：
-
-| 步骤 | 内容 | 依赖 Skill |
-|------|------|-----------|
-| **步骤1** | 读取 targets.md → 读取源码 → 加载 language-detect → 加载编码规范 | language-detect, *-coding-standards |
-| **步骤2** | 多维度审查（架构→错误处理→安全→资源→质量→测试覆盖）+ 语言特定规范审查 | *-coding-standards |
-| **步骤3** | 加载 build-verify 执行构建验证 + 类型检查 + Linter，生成验证清单 | build-verify |
-
-**审查维度**（按优先级顺序）：
-
-| 优先级 | 审查维度 | 检查要点 |
-|--------|----------|----------|
-| P0 | 架构设计 | 模块职责是否单一、耦合度是否合理、分层是否清晰 |
-| P1 | 错误处理 | 异常是否被正确捕获/传播、错误信息是否清晰、是否有 panic 风险 |
-| P2 | 安全性 | SQL注入/XSS/CSRF防护、敏感信息硬编码、权限校验缺失 |
-| P3 | 资源管理 | 内存/连接池/文件句柄是否正确释放、是否有资源泄漏风险 |
-| P4 | 代码质量 | 命名规范、重复代码、魔法数字、函数长度、注释质量 |
-| P5 | 测试覆盖 | 边界条件测试、异常路径测试、核心逻辑测试覆盖率 |
-
-**问题分级标准**：
-
-| 级别 | 标准 | 示例 | ID 格式 |
-|------|------|------|---------|
-| Critical | 导致程序崩溃/数据丢失/资源泄漏 | 协程泄露、配置错误忽略 | C-001 |
-| Major | 影响功能正确性或性能 | 错误处理不完整、超时过长 | M-001 |
-| Minor | 代码风格/可维护性问题 | 命名不规范、魔法数字 | m-001 |
-| Potential | 潜在风险 | 数据竞争、内存泄漏风险 | P-001 |
-
-**输出格式**（固定模板）：
-1. 审查状态（通过/不通过）
-2. 审查范围（语言/框架、文件数、审查类型）
-3. 代码优点
-4. 问题清单（每个问题含 ID/级别/描述/位置/影响/当前代码/修复方案）
-5. 验证清单（带 `- [ ]` / `- [x]` 标记）
-6. 已加载编码规范
-
-**约束**：
-- 必须先读取源代码再进行审查
-- 问题必须按分级标准分配级别和唯一 ID
-- 每个问题必须包含修复前后的代码对比
-- 验证清单必须基于实际 build-verify 结果生成，不可凭空填写
-
-### 4.3 review-flow-fix（修复专家）
-
-| 属性 | 值 |
-|------|-----|
-| 模式 | subagent |
-| 温度 | 0.1 |
-| 权限 | 读写 + bash（受限） |
-| 关键配置 | edit: allow, bash 仅允许构建/Linter/git 追溯/格式化类命令 |
-
-**bash 权限白名单**：
-
-```
-npm run / npm test / npx / python / python3 / pytest
-go build / go test / go vet / gofmt
-black / cmake / make / gcc / g++ / clang / clang-format
-qmake / jom / msbuild
-git log / git blame / git diff / git show / git status
-eslint / npx eslint / flake8 / pylint / golint / clang-tidy / cpplint
-```
-
-**流程**：
-
-| 步骤 | 内容 |
-|------|------|
-| **步骤1** | 读取 review.md（问题清单 + 验证清单），提取语言/框架信息，加载对应编码规范 |
-| **步骤2** | 对每个待修复问题：读取文件上下文 → 按修复方案实施 → 只改必要代码 → 记录修改 |
-| **步骤3** | 编译自检（build-verify），不通过则返回步骤2 |
-| **步骤4** | 回归验证，确认原问题已修复 |
-| **步骤5** | 更新 review.md 验证清单中已通过的检查项 `- [ ]` → `- [x]` |
-
-**编译自检 vs 完整验证**：
-
-| 维度 | review-flow-fix 步骤3（编译自检） | review-flow-review 步骤3（完整验证） |
-|------|----------------------------------|-------------------------------------|
-| 构建验证 | ✅ 快速编译确认 | ✅ 完整 Debug 构建 |
-| 格式检查 | ❌ 不执行 | ✅ 执行 |
-| Linter | ❌ 不执行 | ✅ 执行 |
-| 类型检查 | ❌ 不执行 | ✅ 强制 |
-| 代码审查 | ❌ 不执行 | ✅ 完整审查 |
-| 意图 | 快速反馈修复没破坏编译 | 全面的质量关卡 |
-
-**输出格式**（固定模板）：
-1. 修复状态（已修复/部分修复/无法修复）
-2. 已修复问题（每个含修复说明）
-3. 未修复问题（每个含原因）
-4. 修改内容（每个文件含修复说明）
-5. 验证结果（编译自检 + 验证清单执行结果）
-6. 修改文件列表
-7. 已加载编码规范
-
-**约束**：
-- 每次修改后必须执行编译自检
-- 修复后必须更新 review.md 验证清单
-- 如修复引入新问题必须回退并尝试替代方案
-
----
-
-## 5. 数据流
-
-### 5.1 文件通信架构
-
-```
-review-flow/$SESSION_ID/
-├── .flow-state.json    ← 全流程状态（review-flow 读写，原子写入）
-├── targets.md          ← 审查目标路径清单（review-flow 写入）
-├── review.md           ← 审查报告（review-flow-review 输出）
-├── bugfix.md           ← 修复报告（review-flow-fix 输出）
-├── summary.md          ← 交付汇总（review-flow 写入）
-└── commit-msg.txt      ← 提交信息模板（review-flow 写入）
-```
-
-### 5.2 上下文传递链
-
-```
-阶段1: review-flow ──→ review-flow-review
-          │                    │
-          │  $DOC_PATH          │  自行读取 targets.md
-          │                    │  输出 review.md
-          ▼                    ▼
-        review.md  ←──────────┘
-          │
-          │（review-flow 提取摘要展示给用户）
-          ▼
-阶段2: review-flow ──→ review-flow-fix
-          │                    │
-          │  $DOC_PATH          │  自行读取 review.md
-          │  待修复问题 ID       │  输出 bugfix.md
-          │                    │  更新 review.md 验证清单
-          ▼                    ▼
-        bugfix.md ←──────────┘
-          │
-          │（review-flow 提取关键字段核验）
-          ▼
-阶段3: review-flow 生成 summary.md + commit-msg.txt
-```
-
-### 5.3 状态文件格式
-
-```json
-{
-  "iteration": 0,
-  "status": "reviewing"
-}
-```
-
-- `iteration`：修复循环计数（0, 1, 2），仅在阶段2核验循环中递增
-- `status`：当前流程状态
-
----
-
-## 6. 错误处理与恢复
-
-### 6.1 子 agent 调用重试
-
-```
-subagent 调用失败
-      │
-      ▼
-询问用户：是否重试（剩余 N 次）或终止
-   ├── 是 → 重新调用 subagent
-   └── 否 → 终止流程
-      │
-      ▼
-重试 2 次均失败 → 上报「多次重试失败，请人工介入」
-```
-
-- **重试上限**：每次 subagent 调用最多重试 2 次
-- **重试不计数到 iteration**（重试和修复循环是两个独立维度）
-
-### 6.2 方案确认循环
-
-```
-用户不满意审查结果
-      │
-      ▼
-plan-revising（允许最多 5 轮）
-      │
-      ├── 轮数 < 5 → 收集修改意见 → 重新调用 review-flow-review → 回到确认步骤
-      │
-      └── 轮数 >= 5 → 终止流程，提示「请人工介入」
-```
-
-### 6.3 修复循环
-
-```
-修复核验失败
-      │
-      ▼
-检查 iteration（从 .flow-state.json 读取）
-      │
-      ├── iteration < 2 → iteration += 1
-      │   → status: "fix-retrying"
-      │   → 展示失败项（仅通知，不要求用户确认）
-      │   → 确定新一轮待修复问题集（遗漏项/验证失败项/本轮全量）
-      │   → 调用 review-flow-fix 重新修复
-      │
-      └── iteration >= 2 → status: "failed"
-                          → 展示失败项 + 修改文件列表 + 手动回滚命令
-                          → 上报「多次修复未通过，请人工介入」
-```
-
-- **修复循环上限**：3 轮（iteration = 0, 1, 2）
-- **未超限时自动重试**：无需用户确认
-- **超限后保留工作区代码**，提示手动回滚命令
-
-### 6.4 崩溃恢复
-
-- **状态文件原子写入**：所有 `.flow-state.json` 更新采用 `write.tmp → mv` 模式，防止 crash 后半写文件
-- **启动时校验**：
-  - 文件损坏无法解析 → 报错「状态文件损坏，请人工介入」并终止
-  - 文件存在且有效 → 检查 status 是否为 `delivered`：
-    - 是 `delivered` → 按新流程执行（上一次已完成）
-    - 不是 `delivered` → 报错「上次流程未完成（status: XXX），请先清理目录后重试」并终止
-  - 文件不存在 → 按新流程执行
-
----
-
-## 7. 状态文件生命周期
-
-```
-初始化    → { iteration: 0, status: "reviewing" }
-审查完成  → { iteration: 0, status: "reviewed" }
-方案确认  → { iteration: 0, status: "plan-confirmed" }
-方案修改  → { iteration: 0, status: "plan-revising" }
-方案终止  → { iteration: 0, status: "cancelled" }
-修复完成  → { iteration: N, status: "fixed" }
-修复重试  → { iteration: N, status: "fix-retrying" }
-验证通过  → { iteration: N, status: "verified" }
-交付完成  → { iteration: N, status: "delivered" }
-超限终止  → { iteration: N, status: "failed" }
-```
-
-所有写入均采用 tmp + rename 原子模式。
-
----
-
-## 8. 目录结构
-
-```
-.opencode/agents/review-flow/
-├── review-flow.md           ← 总调度 agent（primary）
-├── review-flow-review.md    ← 审查专家 agent（subagent，只读）
-└── review-flow-fix.md       ← 修复专家 agent（subagent，读写）
-
-依赖的 Skills：
-.opencode/skills/
-├── build-verify/            ← 构建验证（被两个子 agent 引用）
-├── language-detect/         ← 语言探测（被 review-flow-review 引用）
-├── *-coding-standards/      ← 各语言编码规范（按需加载）
-
-运行产物（项目根目录）：
-review-flow/
-└── $SESSION_ID/
-    ├── .flow-state.json
-    ├── targets.md
-    ├── review.md
-    ├── bugfix.md
-    ├── summary.md
-    └── commit-msg.txt
-```
-
----
-
-## 9. 关键约束
-
-1. **方案确认是强制环节** — 未经用户确认不得进入修复阶段
-2. **修复范围由用户选择** — 用户可选择按编号/按级别/全部修复/仅输出报告
-3. **最小化修复原则** — review-flow-fix 只改必要代码，不重构无关代码，不引入新功能
-4. **修复后必须编译自检** — 不通过则回退重试
-5. **修复循环最多 3 轮** — 超限上报人工介入
-6. **方案确认最多 5 轮** — 超限上报人工介入
-7. **状态文件原子写入** — 所有 JSON 写入采用 tmp + rename 模式
-8. **不自动提交代码** — 提交信息仅保存到 commit-msg.txt，由用户决定提交时机
-9. **审查只读** — review-flow-review 没有 write/edit 权限
-10. **编码规范按需加载** — 子 agent 通过 language-detect 探测语言后加载对应规范
+1. **会话隔离**：SESSION_ID 采用秒级时间戳，每次运行独立工作区，天然规避跨会话状态污染；
+2. **状态前置校验**：启动即拦截脏状态（损坏/未完成），绝不在不一致基础上推进；
+3. **SSOT 单一真理来源**：review-flow-fix 只从 review.md 取问题与方案，并把验证结果写回同一文件的复选框——主 Agent 不参与字段级传递，契约变更只改子代理定义；
+4. **分层计数 + 终态收敛**：确认循环与修复循环计数器相互隔离，局部失败不会耗尽全局机会；所有路径只有三种结局——`delivered` 正常交付，或 `cancelled`/`failed` 带着明确原因与现场信息「请人工介入」，不存在静默失败。
