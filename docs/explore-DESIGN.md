@@ -1,8 +1,7 @@
-# explore-flow Agent 设计文档
+# explore Agent 设计文档
 
 > Agent 定义：`.opencode/agents/explore/explore.md`
 > 命令入口：`.opencode/commands/explore/explore.md`（`/explore [探索主题]`）
-> 命名说明：Agent 注册名为 `explore`，为与 dev-flow / bugfix-flow / review-flow 系列对齐，本文档称其 explore-flow。
 
 ---
 
@@ -10,15 +9,15 @@
 
 ### 1.1 概述
 
-explore-flow 是一个**自由探索模式**：深度思考、问题分析、选项对比。它是**思考伙伴，不是实现工具**。
+explore 是一个**自由探索模式**：深度思考、问题分析、选项对比。它是**思考伙伴，不是实现工具**。
 
 用户一条命令即可进入：
 
 ```bash
 /explore                                    # 空：agent 自行感知项目后主动开题
-/explore 实时协作功能怎么设计                  # 模糊想法
-/explore postgres vs sqlite 选哪个            # 技术选型
-/explore 认证系统越来越难维护了                 # 具体问题
+/explore 实时协作功能怎么设计                 # 模糊想法
+/explore postgres vs sqlite 选哪个           # 技术选型
+/explore 认证系统越来越难维护了               # 具体问题
 /explore 登录流程怎么走的                     # 代码疑问
 ```
 
@@ -32,7 +31,7 @@ explore-flow 是一个**自由探索模式**：深度思考、问题分析、选
 结构化程度 ◀──────────────────────────────────────────────▶ 强结构
 
 ┌───────────────┬──────────────────┬──────────────────────┐
-│ explore-flow  │ bugfix-flow      │ review-flow          │
+│ explore  │ bugfix-flow      │ review-flow          │
 │               │                  │ dev-flow             │
 ├───────────────┼──────────────────┼──────────────────────┤
 │ 立场驱动       │ 单 Agent 内联     │ 多 Agent 编排         │
@@ -43,7 +42,7 @@ explore-flow 是一个**自由探索模式**：深度思考、问题分析、选
         ▲ 探索"做什么、为什么"          解决"怎么做、做出来"
 ```
 
-一句话分工：**explore-flow 负责把问题想清楚，其余三个 flow 负责把事情做完**。
+一句话分工：**explore 负责把问题想清楚，其余三个 flow 负责把事情做完**。
 
 ### 1.3 核心设计原则
 
@@ -141,9 +140,9 @@ flowchart LR
 
 ### 3.1 为什么说它"不是工作流"
 
-dev-flow / bugfix-flow / review-flow 都有状态机、门禁和必产文件；explore-flow 刻意全部放弃：
+dev-flow / bugfix-flow / review-flow 都有状态机、门禁和必产文件；explore 刻意全部放弃：
 
-| 维度 | 其余三个 flow | explore-flow |
+| 维度 | 其余三个 flow | explore |
 |------|--------------|--------------|
 | 流程形态 | 固定步骤序列 | 自由对话，跟随话题漂移 |
 | 状态机 / 状态文件 | `.flow-state.json` 断点续作 | 无，会话即状态 |
@@ -194,11 +193,11 @@ flowchart LR
 
 ### 3.4 作为 dev-flow / bugfix-flow 的前置步骤
 
-explore-flow 位于所有执行流程的上游，负责"想清楚"，再把接力棒交给"做出来"的 flow：
+explore 位于所有执行流程的上游，负责"想清楚"，再把接力棒交给"做出来"的 flow：
 
 ```mermaid
 flowchart LR
-    subgraph UP["上游 · explore-flow（本文档）"]
+    subgraph UP["上游 · explore（本文档）"]
         ID(["模糊想法 / 问题 / 选型"]) --> CLAR["理清问题 · 对比方案<br/>识别风险 · 达成结论"]
     end
     CLAR -->|"功能要落地"| DEV["dev-flow<br/>规划→编码→审查→交付"]
