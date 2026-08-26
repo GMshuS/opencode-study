@@ -80,7 +80,7 @@ AI工作流 = 标准化作业SOP（Standard Operating Procedure，标准作业�
 
 ---
 
-### 第二层｜自定义Skill（能力插件）
+### 第二层｜自定义Skill/Command（能力插件，OpenSpec/Spec kit）
 
 **定位：可复用的AI原子能力**
 
@@ -90,13 +90,13 @@ AI工作流 = 标准化作业SOP（Standard Operating Procedure，标准作业�
 
 - 可给工作流用，也可给Agent用
 
-- 轻量化扩展，不依赖平台原生能力
+- Skill/Command 是通用协议，各个工具/平台都能适配
 
 **缺点**
 
-- 只是“单一能力”，没有流程逻辑
+- 只是"单一能力"，没有流程逻辑
 
-- 单独无法完成完整复杂任务
+- 单独无法完成完整复杂任务，需要多个技能组合
 
 - 需要依靠工作流/Agent调度才能生效
 
@@ -104,27 +104,33 @@ AI工作流 = 标准化作业SOP（Standard Operating Procedure，标准作业�
 
 ---
 
-### 第三层｜自定义Agent（OpenCode/CodeBuddy）
+### 第三层｜自定义Agent（OpenCode/CodeBuddy等主流AI工具都支持）
 
-**定位：自主思考、自主规划的智能执行者**
+**定位：用提示词把 SOP 固化成智能体——研发场景的工作流落地首选**
+
+**做法**：把「步骤顺序 + 人工门禁 + 重试上限 + 产物约定」写进 Agent 定义文件，AI 按流程办事；专项能力再委托给 Skill 复用。
 
 **优点**
 
-- 不用固定死步骤，给目标就能自己拆解任务
+- Agent即角色，配置多个Agent角色，分工明确，协同完成工作任务
 
-- 能动态选工具、自适应突发情况、灵活度极高
+- 权限控制方便：读写、bash、git等权限灵活配置，防止大模型越权
 
-- 适合复杂、多变、无固定流程的场景
+- 流程约束 + 门禁后，兼得灵活性与稳定可复盘
+
+- 天然支持人机协作：关键节点停下来等人拍板
 
 **缺点**
 
-- 自主性太强，容易跑偏、控制难度大
+- 寄生于宿主工具（OpenCode/CodeBuddy），受其能力边界限制，强依赖宿主工具
 
-- 结果不稳定，调试难度大
+- 流程逻辑写在自然语言里，改流程 = 改提示词且需回归验证
 
-- 开发和运维成本远高于固定工作流
+- 长流程受上下文窗口限制，须靠文件落盘传递上下文、多Agent串联
 
-**口诀：最聪明灵活，但管好它难度较大**
+- 执行质量仍取决于底层模型，不确定性需门禁与重试上限兜底
+
+**口诀：SOP 写进提示词，门禁把关才靠谱**
 
 ---
 
@@ -159,7 +165,7 @@ AI工作流 = 标准化作业SOP（Standard Operating Procedure，标准作业�
 |---|---|---|---|
 |平台编排|快、简单、零代码|能力受限、不灵活|快速验证、常规流程|
 |自定义Skill|可复用、轻量扩展|无流程、不能独立跑|通用能力封装|
-|自定义Agent|智能、灵活、自适应|不可控、难调试|复杂多变任务|
+|自定义Agent|SOP固化的执行体、角色分工明确|依赖宿主工具、提示词工程有门槛|通用工作流|
 |自研底座|全可控、高安全、高性能|成本高、周期长|企业核心业务、强合规|
 
 > 四层架构循序渐进，按需选型，避免过度开发
@@ -168,217 +174,241 @@ AI工作流 = 标准化作业SOP（Standard Operating Procedure，标准作业�
 
 ## 我的工作流
 
-基于第三层「自定义 Agent」架构，我搭建了 **4 个工作流 + 1 个前置探索**（explore），覆盖从「想清楚」到「做出来」的完整链路。
+基于第三层「自定义Agent」（OpenCode/CodeBuddy），我在日常开发中落地了一套 **4 个工作流的组合拳**：
 
-### 4 个工作流总览
-
-| 工作流 | 类型 | 一句话定位 | 架构模式 | 结构化程度 | 典型命令 | 设计文档 |
-|--------|------|-----------|---------|-----------|---------|---------|
-| **explore** | 前置伪工作流 | 帮你想清楚「做什么、为什么」的思考伙伴 | 单 Agent · 立场驱动 | 最弱（自由对话） | `/explore 技术选型` | [explore-DESIGN.md](explore-DESIGN.md) |
-| **dev-flow** | 开发流程 | 从需求到交付的全流程开发 | 多 Agent 编排（1主+4子） | 强 | `/dev-flow 实现用户登录` | [dev-flow-DESIGN.md](dev-flow-DESIGN.md) |
-| **bugfix-flow** | 修复流程 | 单个 Bug 的快速修复 | 单 Agent 内联 | 中 | `/bugfix-flow 登录报500` | [bugfix-flow-DESIGN.md](bugfix-flow-DESIGN.md) |
-| **review-flow** | 审查流程 | 存量代码审查 + 定向修复 | 多 Agent 编排（1主+2子） | 强 | `/review-flow src/` | [review-flow-DESIGN.md](review-flow-DESIGN.md) |
-
-> 以上文档链接为 docs 目录下的设计文档。
-
-### 结构化程度光谱
-
-四个 flow 按「结构化程度」排成一条光谱——越靠左越自由发散，越靠右越强控流程：
-
-```mermaid
-flowchart LR
-    subgraph LOW["自由·发散"]
-        E[explore<br/>想清楚做什么]
-    end
-    subgraph MID["半结构化"]
-        BF[bugfix-flow<br/>单Agent内联·分钟级]
-    end
-    subgraph HIGH["强结构·多Agent"]
-        DV[dev-flow<br/>状态机·批次·小时级]
-        RV[review-flow<br/>审查修复·会话隔离]
-    end
-    E --> BF --> DV & RV
-```
-
-**一句话分工**：explore 负责把问题**想清楚**，其余三个 flow 负责把事情**做完**。
+- 1 个前置伪工作流：**explore**（探索思考）
+- 3 个执行型工作流：**dev-flow**（中大型需求开发）/ **bugfix-flow**（小需求开发/Bug修复）/ **review-flow**（代码审查）
 
 ---
 
-### explore｜前置探索（想清楚）
+### 全景：一套组合拳
 
-**一句话定位**：自由探索模式，是「思考伙伴」，不是实现工具——永不写业务代码，只负责把问题、选型、风险想明白。
+一句话分工：**explore 负责把问题想清楚，三个 flow 负责把事情做完。**
 
-**用法示例**：
-
-```bash
-/explore                                    # 空：自行感知项目后主动开题
-/explore postgres vs sqlite 选哪个           # 技术选型对比
-/explore 认证系统越来越难维护了               # 具体问题分析
+```mermaid
+flowchart LR
+    IDEA(["模糊想法 / Bug / 存量代码"]) --> EX["explore 探索<br/>想清楚：问题分析 · 方案对比 · 风险识别"]
+    EX -->|"功能要落地"| DEV["dev-flow 功能开发<br/>规划→编码→审查→交付"]
+    EX -->|"缺陷要修复"| BF["bugfix-flow Bug修复<br/>分析→修复→验证→提交"]
+    EX -.->|"只是想明白了，暂不做"| END(["结束"])
+    OLD(["存量老代码"]) --> RV["review-flow 代码审查<br/>审查→分级→定向修复"]
+    DEV --> DONE(["交付"])
+    BF --> DONE
+    RV --> DONE
 ```
 
-**核心设计**：它是「立场（stance）」而非「工作流」——无固定步骤、无门禁、无必产物，靠**宽读取、窄写入**的漏斗形权限收敛安全性：
+按「结构化程度」排成一条光谱：
+
+| 维度 | explore | bugfix-flow | dev-flow / review-flow |
+|------|---------|-------------|------------------------|
+| 形态 | 立场驱动 | 单 Agent 内联 | 多 Agent 编排 |
+| 步骤 / 门禁 | 零步骤 · 零门禁 | 4 步骤 · 3 类门禁 | 状态机 · 批次 · 人工门禁 |
+| 耗时 | 无固定 | 分钟级 | 小时级 |
+| 温度 | 0.8 发散思考 | 0.2~0.3 收敛执行 | 主控 0.0 机械调度 |
+
+> 越往右越结构化：左边管「做什么、为什么」，右边管「怎么做、做出来」
+
+---
+
+### 四个工作流总览
+
+| 工作流 | 一句话定位 | 架构模式 | 适用场景 | 设计文档 |
+|--------|-----------|---------|---------|----------|
+| explore | 思考伙伴：动手前先把问题想清楚 | 立场驱动 · 零流程 | 需求分析、技术选型、方案对比、代码疑问 | [explore-DESIGN.md](./explore-DESIGN.md) |
+| bugfix-flow | 小需求/Bug修复快车道：分钟级闭环 | 单 Agent 内联（4 步骤） | 小型需求、Bug 的快速修复与验证 | [bugfix-flow-DESIGN.md](./bugfix-flow-DESIGN.md) |
+| dev-flow | 全流程开发流水线：一条命令从需求到交付 | 多 Agent 编排（1 主 + 4 子） | 从零开发完整功能、大型需求，小时级多批次 | [dev-flow-DESIGN.md](./dev-flow-DESIGN.md) |
+| review-flow | 存量代码体检：先审查再自选范围修复 | 多 Agent 编排（1 主 + 2 子） | 老代码质量治理、模块级代码审查 | [review-flow-DESIGN.md](./review-flow-DESIGN.md) |
+
+下面重点介绍使用频率最高、最能体现设计思想的三个：**explore → dev-flow → bugfix-flow**。
+
+---
+
+### explore：动手前，先把问题想清楚
+
+#### 它最特殊——是一种立场，不是工作流
+
+没有固定步骤、没有状态机、没有必须产物，就是一场带着 AI 的深度对话：
+
+| 维度 | 三个执行 flow | explore |
+|------|--------------|---------|
+| 流程形态 | 固定步骤序列 | 自由对话，跟随话题漂移 |
+| 状态机 / 断点续作 | 有（.flow-state.json） | 无，会话即状态 |
+| 必须产物 | plan.md 等 | 无必须产出，笔记可选 |
+| 结束条件 | 交付等明确终点 | 没有终点，随时可走可留 |
+
+#### 关键设计
+
+**① 宽读窄写的漏斗权限** —— 读得宽（全库+外网免确认），写得窄（源代码零写入）：
 
 ```text
 读取面（宽，免确认）                写入面（窄，双保险）
-read / bash* / webfetch* / task      源代码零写入
-         │                           仅经用户同意写
-         └──── 全库可见 ────▶  dev-flow/explore/ 探索笔记
+┌──────────────────────┐          ┌───────────────────────────┐
+│ read / bash / webfetch│  ──────▶ │ 提议 → 用户同意后才写入     │
+│ 全库可见 + 外部调研      │          │ 仅允许 dev-flow/explore/*  │
+└──────────────────────┘          └───────────────────────────┘
 ```
 
-**四种出口**（没有终点，随时可走可留）：
+**② 发散 ⇄ 收敛的对话循环，四种出口** —— 永不自动开工，跃迁必须用户确认：
 
 ```mermaid
-flowchart LR
-    EX(["探索会话<br/>任意时刻"]) --> O1["① 流入开发<br/>→ /dev-flow"]
-    EX --> O2["② 只是澄清<br/>直接结束"]
-    EX --> O3["③ 产生笔记<br/>explore-notes-*.md"]
-    EX --> O4["④ 留待以后<br/>随时继续"]
+stateDiagram-v2
+    [*] --> 自由对话 : 静默感知项目背景后接话
+    state 自由对话 {
+        发散 --> 收敛 : 对比表 · 权衡图 · 推荐路径
+        收敛 --> 发散 : 新线索出现 · 自适应转向
+    }
+    自由对话 --> 流入开发 : 思路清晰 → 提议 /dev-flow
+    自由对话 --> 只是澄清 : 理解到位直接结束
+    自由对话 --> 产生笔记 : 用户同意才写 explore-notes-*.md
+    自由对话 --> 留待以后 : 思考本身即价值
 ```
 
-**关键要点**：
+#### 与下游的接力（松耦合）
 
-- **温度 0.8**（四个 flow 中最高）——发散思维、头脑风暴
-- **接地探索**——读真实代码、git 历史，画 ASCII 架构图，不只纸上谈兵
-- **明确跃迁边界**——即使说「就按这个做」，也必须确认退出探索模式才进开发流程
-- 位于所有执行流程**上游**，把接力棒交给 dev-flow / bugfix-flow
-
----
-
-### dev-flow｜全流程开发（做出来）
-
-**一句话定位**：多 Agent 编排式开发管线，一条命令跑完「规划→编码→审查→修复→交付」全流程。
-
-**用法示例**：
+探索笔记可直接作为需求文档输入，也可以口头交接结论：
 
 ```bash
-/dev-flow 实现用户登录功能          # 直接给需求描述
-/dev-flow dev-flow/20260824/用户登录/brainstorm.md   # 或给需求文档路径
+# 显式交接：探索笔记 = 需求文档
+/dev-flow dev-flow/explore/explore-notes-2026-07-08-SmartTradeRescue_HSX-design.md
+
+# 口头交接：把探索中达成的结论复述为需求
+/dev-flow 参考BX版实现HSX应急下单工具
 ```
 
-**总体流程**：
-
-```mermaid
-flowchart LR
-    U(["用户"]) -->|"/dev-flow 需求"| F["dev-flow 主调度<br/>纯调度·temp0.0"]
-    F --> P["dev-plan<br/>规划+分批次"]
-    P --> G1{计划确认<br/>门禁≤5轮}
-    G1 -->|确认| C["dev-code<br/>分批编码"]
-    C --> R["dev-review<br/>审查"]
-    R -->|通过| D["交付"]
-    R -->|不通过| B["dev-bugfix<br/>修复≤3轮"] --> R
-```
-
-**架构分工**（1 主 + 4 子，主 Agent 是纯调度器，不懂代码）：
-
-| Agent | 一句话职责 | 温度 |
-|-------|-----------|------|
-| dev-flow | 调度、状态机流转、机械核验、汇总 | 0.0（完全确定） |
-| dev-plan | 现状分析、架构设计、任务拆分、**计算批次** | 0.2 |
-| dev-code | 按批编码、语法自检、勾选任务 | 0.3 |
-| dev-review | 多维审查、分级问题清单、构建验证 | 0.4（最大发散） |
-| dev-bugfix | 根因定位、最小化修复、回归验证 | 0.3 |
-
-**关键机制**：
-
-- **文件即契约**：子 Agent 不直接对话，靠 `plan.md`（唯一真理来源 SSOT）等报告文件接力
-- **批次预计算 + 机械核验**：规划阶段就分好批次，编码后用 grep 勾选框判定完成度
-- **双计数器防死循环**：修复迭代 ≤3 轮、同批重试 ≤2 次、计划确认 ≤5 轮
+> 下游 flow 并不依赖探索笔记存在——没探索过也能直接跑，笔记只是提升输入质量的可选加速器。
 
 ---
 
-### bugfix-flow｜单 Bug 修复（做出来）
+### dev-flow：中大型需求开发流水线
 
-**一句话定位**：单 Agent 内联式修复流程，粒度小、链路短，一条命令修完一个 Bug。
+一条命令启动完整生命周期：
 
-**用法示例**：
+```bash
+/dev-flow 实现用户登录功能            # 直接给需求描述
+/dev-flow xxx/explore-notes-2026-07-08-SmartTradeRescue_HSX-design.md         # 或给需求文档路径（含探索笔记）
+```
+
+```text
+需求规划 → 计划确认 → 分批编码 → 审查 → BUG修复(≤3轮) → 交付
+```
+
+#### 架构：一个「不懂代码的主管」带 4 个专家
+
+主 Agent 是**纯调度器**——只做传参、决策、汇总，禁止读源码、评方案；所有技术活下放给 4 个子代理，彼此不共享上下文，靠文件接力（文件即契约）：
+
+```mermaid
+flowchart TB
+    U(["/dev-flow 需求"]) --> MF["dev-flow 主Agent<br/>纯调度 · temp 0.0<br/>只传参/决策/汇总"]
+    MF -->|"步骤1 规划"| P["dev-plan 只读规划<br/>产出计划+预计算批次"]
+    MF -->|"步骤2 分批编码"| C["dev-code<br/>按批编码·勾选任务"]
+    MF -->|"步骤3.1 审查"| R["dev-review<br/>多维审查·分级问题"]
+    MF -->|"步骤3.2 修复"| B["dev-bugfix<br/>根因定位·最小化修复"]
+
+    FS[("报告文件区 $DOC_PATH/<br/>plan.md = 唯一真理来源 SSOT")]
+    P & C & R & B <-->|"自行读写报告"| FS
+    MF -.->|"机械 grep 复选框核验"| FS
+```
+
+#### 五个关键设计
+
+| # | 机制 | 解决什么问题 |
+|---|------|------------|
+| 1 | 文件即契约 | 子代理间靠 plan/code/review 报告接力，增减字段只改对应子代理定义，主流程零改动 |
+| 2 | 批次预计算 | 批次在规划期算好并写入锚点；调度器只 grep 复选框机械核验完成度，杜绝语义误判 |
+| 3 | 计划确认门禁 | 计划必须经用户点头才能编码，AI 不擅自开工（修改 ≤5 轮） |
+| 4 | 三层重试上限 | 计划确认 ≤5 轮 / 同批重试 ≤2 次 / 修复循环 ≤3 轮，超限一律上报「请人工介入」 |
+| 5 | 温度梯度 0.0→0.4 | 调度必须完全确定(0.0)，编码适度灵活(0.3)，审查最大发散(0.4)主动找问题 |
+
+> 口诀：**主管不懂代码只管流程，专家各干各的靠文件交接，关键节点人来把关**
+
+---
+
+### bugfix-flow：小需求/Bug修复快车道
+
+一条命令启动分钟级闭环：
 
 ```bash
 /bugfix-flow 登录按钮点击后报 500 错误
 ```
 
-**总体流程**：
-
-```mermaid
-flowchart LR
-    U(["用户"]) -->|"/bugfix-flow 问题"| A["分析根因<br/>fix-plan+diff"]
-    A --> G1{方案确认<br/>门禁≤5轮}
-    G1 -->|确认| F["执行修复"]
-    F --> V["编译验证<br/>build-verify"]
-    V -->|通过| DOC["生成交付文档<br/>commit-msg"]
-    V -->|失败| RT{"重试≤2次<br/>用户同意?"}
-    RT -->|是| F
+```text
+分析 → 方案确认 → 执行修复 → 编译验证 → 生成提交信息 → 总结交付
 ```
 
-**关键机制**：
+#### 选型逻辑：为什么单 Agent 内联？
 
-- **单 Agent 内联**：分析—修复—验证共享同一上下文，路径最短、效率最高
-- **状态持久化**：支持断点续作（中断后可从 `.flow-state.json` 恢复）
-- **产物版本化**：`-v{attempt}` 保留每轮方案，便于回溯
-- **3 类门禁**：方案确认 ≤5 轮、编译重试 ≤2 次、交付确认（可 reopened 继续修，≤3 次全局修复）
+小需求/Bug修复粒度小、链路短，拆成多 Agent 反而引入上下文传递损耗与编排复杂度：
 
-> **review-flow** 简述：多 Agent 编排式存量代码审查 + 定向修复，支持问题分级自选修复、仅报告模式，主 Agent 有五条红线禁止读源码，技术判断全部下放给子代理。详见 [review-flow-DESIGN.md](review-flow-DESIGN.md)。
+| 维度 | bugfix-flow（内联） | dev-flow（编排） |
+|------|--------------------|------------------|
+| 场景 | 小需求/Bug修复 | 中大型需求 |
+| 执行主体 | 一个 Agent 干完全部 | 1 主 + 4 子分工协作 |
+| 上下文 | 内存共享，零损耗 | 跨 Agent 文件接力 |
+| 耗时 | 分钟级 | 小时级 |
+
+> **小任务用内联，大工程用编排**——架构没有优劣，只有是否匹配场景。
+
+#### 四个关键设计
+
+| # | 机制 | 解决什么问题 |
+|---|------|------------|
+| 1 | 带 diff 的方案 | 修改点必须给出 diff 代码块，纯文字视为无效，杜绝「嘴上改码」 |
+| 2 | 三类人工门禁 | 方案确认 / 编译重试 / 交付确认——用户未表态禁止动一行代码 |
+| 3 | 断点恢复 | 状态实时落盘 .flow-state.json，会话中断后接着上次进度继续 |
+| 4 | 版本化 + reopen | fix-plan-v1/v2/v3 全保留可回溯；交付后发现根本性问题 → attempt+1 回炉重来（≤3 次） |
+
+> 口诀：**先给 diff 人工审查再动手，门禁三道把好关，断了能续、错了能回**
 
 ---
 
 ## 工作流实战
 
-工作流已在 **6 个真实项目**中投入使用，累计跑完 **百余次** explore / dev-flow / bugfix-flow / review-flow，覆盖需求分析、功能开发与 BUG 修复三大场景。
-
-### 实战总览矩阵
-
-行 = 项目，列 = 工作流，单元格数字 = 实际使用次数（来自各项目运行产物统计）：
-
-| 项目 | 技术栈 | explore | dev-flow | bugfix-flow | review-flow |
-|------|--------|:---:|:---:|:---:|:---:|
-| **SmartEazy**（策略易） | C++ / Qt | 10+ | 4 | 67 | - |
-| **EasyStrategyGo**（Go 服务） | Go | - | - | 6 | - |
-| **TradeServer**（交易后台） | C++ / Go | - | - | 2 | - |
-| **PC-Client-Qt**（智能客户端） | C++ / Qt | 1 | 1 | 12 | - |
-| **ClientSession-Qt**（通信库） | C++ / Qt | - | - | 2 | - |
-| **XtgSafeAssistant_Qt**（反外挂客户端） | C++ / Qt | - | 5 | 15 | 1 |
-
-> `-` 表示暂无记录，数据基于各项目 `dev-flow/`、`bugfix-flow/`、`review-flow/` 目录下的 `.flow-state.json` 与 explore 笔记统计。
-
-### 使用频率对比
-
-```text
-项目                 explore   dev-flow   bugfix-flow   review-flow
-SmartEazy              ████        ██          ████████████
-EasyStrategyGo                            ██
-TradeServer                               █
-PC-Client-Qt            █           █         ██████
-ClientSession-Qt                                    █
-XtgSafeAssistant_Qt                     █████        ███      █
-```
-（每个 `█` ≈ 1 次，仅示意相对规模）
-
-**规律小结**：
-- **bugfix-flow 使用最频繁**——日常存量代码的小修小补，轻量内联流程效率最高
-- **explore 集中在核心业务项目**——SmartEazy 的 HSX 应急流程、PC-Client 的反外挂迁移，都在动手前先「想清楚」
-- **dev-flow 用于大功能重构**——SmartEazy 应急流程、XtgSafeAssistant 虚拟机检测重构等
+以下全部来自各项目仓库中的**真实运行产物**（截至 2026-08），非演示数据。
 
 ---
 
-### 典型案例亮点
+### 使用全景：6 个项目、144 次运行
 
-#### 亮点一：explore → dev-flow 衔接链（SmartEazy · HSX 应急流程）
+| 项目 | 定位 | 技术栈 | dev-flow | bugfix-flow | review-flow | explore 笔记 |
+|------|------|--------|:---:|:---:|:---:|:---:|
+| SmartEazy | 策略易主程序 | C++ | 4 | **42** | – | 12 篇 |
+| EasyStrategyGo | 策略易 Go 服务程序 | Go | – | 13 | 3 | – |
+| TradeServer | 交易后台 | C++ | – | 2 | – | – |
+| PC-Client-Qt | 智能客户端 QT 版 | Qt/C++ | 2 | 20 | – | 1 篇 |
+| ClientSession-Qt | ClientSession 通信库 | Qt/C++ | – | 9 | – | – |
+| XtgSafeAssistant_Qt | 反外挂客户端 QT 版 | Qt/C++ | 4 | 27 | 1 | 5 篇 |
+| **合计** | | | **10** | **113** | **4** | **18 篇** |
 
-`SmartEazy`（策略易）在**沪深新股申购应急（HSX Rescue）**改造上，走通了「先 explore 想清楚 → 再 dev-flow 做出来」的完整链路：
+使用分布三个结论：
+
+1. **bugfix-flow 是绝对主力（占 78%）**——小需求/日常修 Bug 最高频，6 个项目全覆盖，C++/Go 通吃
+2. **explore + dev-flow 组合攻坚大功能**——所有新功能都走「先探索再开发」
+3. **review-flow 刚起步**——存量代码治理场景还在推广
+
+---
+
+### 案例一：explore → dev-flow 接力攻坚（XtgSafeAssistant VM检测重构）
+
+反外挂的虚拟机检测模块不可靠，三天完成三轮「探索 → 开发」迭代：
 
 ```mermaid
-flowchart LR
-    E["explore 探索<br/>SmartTradeRescue_HSX 设计笔记<br/>47KB · 对比表 · 状态机草图"]
-    -->|"思路清晰·产笔记"| D["dev-flow 开发<br/>SmartTradeRescue_HSX<br/>plan/code/review/bugfix 全流程"]
-    D -->|"交付"| R["上线迭代<br/>后续 30+ 次 bugfix 打磨细节"]
+timeline
+    title VM检测模块重构时间线
+    06-29 : /explore 探测可靠性问题，产出探索笔记
+    06-30 : /dev-flow 第一轮 vm-detection-reliability 开发落地
+    06-30 : /explore 发现误报优化点，产出第二篇笔记
+    07-01 : /dev-flow 第二轮 vm-detection-optimize-false-positive
+    07-02 : /explore 提出架构级重构方案
+    07-02 : /dev-flow 第三轮 vm-detection-rearchitecture 重构落地
 ```
 
-- **explore 阶段**产出多份设计笔记（如 `explore-notes-2026-07-08-HSX-design.md` 47KB、`BX-rescue-apply-detailed-design.md` 63KB），把应急流程的存储过程、状态流转画成架构草图
-- **dev-flow 阶段**落地 `SmartTradeRescue_HSX` 功能，产出完整 `plan/code/review/bugfix` 报告
-- **后续迭代**又通过 30+ 次 bugfix-flow 持续打磨（如 `bugfix-hsx-rescue-applycode`、`bugfix-hsx-rescue-usercancel`）
+**接力方式**：每轮探索笔记直接作为下一轮 `/dev-flow <笔记路径>` 的输入需求文档；期间还穿插多个 bugfix-flow 小修复（qemu 检测、误报阈值等）。
 
-> 这个案例说明：复杂功能先用 explore **控风险、定方案**，再用 dev-flow **工业化落地**，最后 bugfix-flow **敏捷迭代**——三个工作流各司其职。
+**要点**：第一版效果不满意？不是硬着头皮修，而是回到 explore 重新框定问题，再带着新方案进 dev-flow。
 
-#### 亮点二：explore → dev-flow（PC-Client-Qt · 反外挂模块迁移）
+---
+
+#### 案例二：explore → dev-flow（PC-Client-Qt · 反外挂模块迁移）
 
 `PC-Client-Qt` 在**反外挂辅助模块迁移**上使用 explore 先行分析：
 
@@ -386,77 +416,85 @@ flowchart LR
 - **dev-flow**：`anti-cheat-assistant-migration` 落地迁移，产物含完整计划与审查
 - 体现了 explore 笔记可作为 dev-flow 需求文档输入的「显式交接」用法
 
-#### 亮点三：dev-flow + bugfix-flow 持续迭代（XtgSafeAssistant · 虚拟机检测）
+---
 
-`XtgSafeAssistant`（反外挂客户端）围绕**虚拟机/多开检测**做了多轮大功能开发与大量修复：
+### 案例三：新功能从探索到交付全链路（SmartEazy HSX 应急下单工具）
 
-- **dev-flow 重构 5 次**：`vm-detection-reliability`、`vm-detection-optimize-false-positive`、`vm-detection-rearchitecture`、`asyncCheck-optimization-plan`、`SubProcessManager`——不断优化检测可靠性与误报率
-- **bugfix-flow 修复 15 次**：`bugfix-vm-threshold-and-qemu`、`bugfix-detection-timeout-block-eventloop`、`bugfix-checkVEMissingLog` 等，覆盖检测逻辑、事件循环、日志、编码（GB2312 乱码）等细节
-- 体现了 dev-flow 负责**大版本重构**、bugfix-flow 负责**小问题快速修**的分工协同
+沪深打新策略缺少应急下单工具，需参考已有北证版本实现 HSX 版：
+
+```text
+07-08  /explore   SmartTradeRescue_HSX-design
+       └── 对比 BX 版差异 · 画架构图 · 列风险点，产出设计笔记
+07-09  /dev-flow  SmartTradeRescue_HSX（笔记作为需求输入）
+       └── 规划 → 分批编码 → 审查 → 交付
+07-13 ~ 07-17    上线后一周密集修复 10+ 个 HSX 相关修改（bugfix-flow）
+```
+
+> 后续重构同样走此模式：`07-15 探索 CSellTask_HSX-DoTask 重构 → 当天 /dev-flow 落地`。
+
+一次 dev-flow 运行的完整产物（报告与代码分离）：
+
+```text
+dev-flow/20260709/SmartTradeRescue_HSX/
+├── .flow-state.json     # 流程状态，断点恢复依据
+├── plan.md              # 开发计划 = 唯一真理来源（含批次锚点）
+├── code.md              # 编码成果报告
+├── review.md            # 审查报告（分级问题清单）
+├── bugfix.md            # 修复记录
+├── modified_files.txt   # 改动文件全集
+└── commit-msg.txt       # 四段式提交信息
+```
+
+> commit-msg.txt 由报告文件机械提取生成，与方案文档强一致——不再手写提交信息，通过 /git-autocommit 命令提交git。
 
 ---
 
-### 分项目案例精选
+### 案例四：bugfix-flow 高频日常修复（SmartEazy 两个月 42 个 小需求/代码审查修复/Bug修复）
 
-#### SmartEazy（策略易）——使用最深入
+日常 小需求/Bug 全部走 bugfix-flow 分钟级闭环，典型样本：
 
-| 时间 | 工作流 | 案例主题 | 说明 |
-|------|--------|---------|------|
-| 06-17 | dev-flow | BX 新股申购时间提前 | 全流程开发 |
-| 07-06~08 | explore | SmartTradeRescue HSX 设计 | 47KB 设计笔记 |
-| 07-09 | dev-flow | SmartTradeRescue_HSX | 应急流程落地 |
-| 07-15 | dev-flow | SellTask_HSX_DoTask 重构 | 分批重构 |
-| 06-17~08-18 | bugfix-flow | HSX 应急 / 申购 / 债券等 67 个 | 密集迭代修复 |
-| 07-21 | explore | BX-rescue-apply 详细设计 | 63KB 设计笔记 |
+| ID | 问题 |
+|--------|------|
+| bugfix-showlist-lag | 大数据量界面卡顿（虚表改造） |
+| bugfix-rescue_apply_timeout | 时间采用整型加减，应急申购超时误判（改为时间比较） |
+| bugfix-hsx-rescue-usercancel | 用户计划bx_plan_order.UserCancel撤销处理遗漏 |
+| bugfix-sql_json_parse_perf | 存储过程，大量重复 JSON 解析性能问题（先通过其它条件过滤，延后解析JSON数据） |
+| floweazy-command-timeout | 柜台慢指令偶发超时告警（改造支持慢指令独立设置超时时间） |
 
-#### EasyStrategyGo（Go 服务）
+单次修复的标准产物：
 
-| 时间 | 工作流 | 案例主题 | 说明 |
-|------|--------|---------|------|
-| 06-15~16 | bugfix-flow | 日志同步 / 短信重试日志 | 6 次修复 |
-| 08-03 | bugfix-flow | 用户同步告警 | 服务端修复 |
-| 08-14 | bugfix-flow | B2B 同步丢错误信息 / 请求超时 | 联调问题 |
+```text
+bugfix-flow/20260728/bugfix-apply-price-precision/
+├── .flow-state.json    # 流程状态，断点恢复依据
+├── fix-plan-v1.md      # 修复方案（含 diff）
+├── errors.log          # 编译错误留痕（失败时追加）
+├── commit-msg.txt      # 四段式提交信息
+└── fix-result-v1.md    # 修复结果 + 审查报告
+```
 
-#### TradeServer（交易后台）
-
-| 时间 | 工作流 | 案例主题 | 说明 |
-|------|--------|---------|------|
-| 08-13 | bugfix-flow | 多模块调用栈 | 栈信息修复 |
-| 08-20 | bugfix-flow | 申购包 HTTP 超时 | 超时问题 |
-
-#### PC-Client-Qt（智能客户端）
-
-| 时间 | 工作流 | 案例主题 | 说明 |
-|------|--------|---------|------|
-| 06-25 | explore→dev-flow | 反外挂模块迁移 | explore 笔记 + 迁移开发 |
-| 06-22~08-17 | bugfix-flow | 算法交易弹窗 / 委托确认 / 崩溃等 12 个 | 12 次修复 |
-
-#### ClientSession-Qt（通信库）
-
-| 时间 | 工作流 | 案例主题 | 说明 |
-|------|--------|---------|------|
-| 06-24 | bugfix-flow | 粘包处理 | onReceive 粘包 |
-| 08-18 | bugfix-flow | Win7 栈限制 | 兼容性修复 |
-
-#### XtgSafeAssistant_Qt（反外挂客户端）
-
-| 时间 | 工作流 | 案例主题 | 说明 |
-|------|--------|---------|------|
-| 06-30~07-06 | dev-flow | 虚拟机检测可靠性 / 优化误报 / 重构 | 5 次大功能开发 |
-| 06-15~07-29 | bugfix-flow | 检测 / 事件循环 / 编码等 15 个 | 15 次修复 |
-| 06-18 | review-flow | 代码审查 | 1 次审查会话 |
+> commit-msg.txt 由报告文件机械提取生成，与方案文档强一致——不再手写提交信息，通过 /git-autocommit 命令提交git。
 
 ---
 
-### 实战收益
+### 场景选型速查
 
-| 场景 | 解决的问题 | 工作流收益 |
-|------|-----------|-----------|
-| 需求分析 | 方案未想清就动手，返工多 | explore 先控风险、定方向 |
-| 功能开发 | 大功能落地不可控 | dev-flow 批次化、门禁化交付 |
-| BUG 修复 | 修完不知道有没有破坏别的 | bugfix-flow 强制编译验证 + 提交信息 |
-| 代码质量 | 存量代码藏雷 | review-flow 审查 + 定向修复 |
+| 你要做什么 | 用哪个 | 启动命令 |
+|-----------|--------|---------|
+| 有模糊想法 / 技术选型 / 看不懂代码 | explore | `/explore 这个模块怎么设计的` |
+| 开发一个完整新功能 | dev-flow | `/dev-flow 实现xx功能` |
+| 实现小功能/修已知 Bug | bugfix-flow | `/bugfix-flow 点击xx报500错误` |
+| 给老代码做体检并定向修复 | review-flow | `/review-flow src/` |
 
-**核心结论**：三个工作流形成「探索 → 开发 → 修复」的闭环，把 AI 从「靠运气输出」变成「稳定工业化输出」，已在真实业务项目中验证可行、可复用、可推广。
+> 记不住就记一句：**想不清楚找 explore，做功能找 dev-flow，实现小功能/修 Bug 找 bugfix-flow，体检老代码找 review-flow**
+
+---
+
+### 实战心得
+
+1. **explore 先行，返工最少** —— 需求阶段花 10 分钟探索对比，比编码阶段返工 1 小时划算；且探索笔记天然就是需求文档
+2. **bugfix-flow 是性价比之王** —— 分钟级闭环 + 人工代码审核 + 自动生成提交信息，高频场景收益最大（实战占比 80% 左右）
+3. **dev-flow 是长任务保障** ——  自动任务拆解 + 分批编码 + 任务checklist校验 + 门禁化交付 + 自动生成提交信息，解决大功能落地不可控的问题
+4. **报告与代码严格分离** —— 所有 flow 的产物统一写入运行目录、不入 git，源码目录永远干净
+5. **流程本身也在演进** —— 早期的 coding-bugfix 已被 bugfix-flow 替代（PC-Client-Qt 中可见新旧共存痕迹）；用工作流约束 AI，也用 AI 迭代工作流本身
 
 ---
