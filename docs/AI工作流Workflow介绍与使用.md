@@ -208,6 +208,34 @@ flowchart LR
 
 > 越往右越结构化：左边管「做什么、为什么」，右边管「怎么做、做出来」
 
+**依赖的 Skills 与 Commands**：三个 flow 共享 3 类可复用 Skill（内部调用），另有 1 个交付命令供用户审核后手动调用。explore 不依赖任何 skill：
+
+```mermaid
+flowchart LR
+    subgraph SKILLS["共享 Skills"]
+        LD["language-detect<br/>语言探测"]
+        CS["xxx-coding-standards<br/>编码规范<br/>(5 种语言)"]
+        BV["build-verify<br/>构建验证"]
+    end
+
+    DEV["dev-flow"] --> LD & CS & BV
+    BF["bugfix-flow"] --> LD & CS & BV
+    RV["review-flow"] --> LD & CS & BV
+
+    DEV & BF & RV -.->|"交付时生成<br/>commit-msg.txt<br/>提示用户"| HUMAN(["👤 用户<br/>人工审核代码"])
+
+    HUMAN -.->|"审核后手动调用"| GA["/git-autocommit<br/>自动提交"]
+
+    EX["explore"] -.-|无依赖| SKILLS
+```
+
+| 类型 | 名称 | 一句话定位 | 被谁调用 |
+|------|------|-----------|---------|
+| Skill | `language-detect` | 扫描项目文件自动识别语言，加载对应编码规范 | dev-plan / bugfix-flow / review-flow-review |
+| Skill | `xxx-coding-standards` | 5 种语言的编码规范（C++/Go/JS/Python/SQL） | dev-code / dev-review / dev-bugfix / bugfix-flow / review-flow-fix |
+| Skill | `build-verify` | 静态检查 → 编译验证 → 结构化报告 | dev-review / dev-bugfix / bugfix-flow / review-flow |
+| Command | `/git-autocommit` | 分析变更 + 生成四段式提交信息 + 自动提交 | **用户手动调用**（flow 交付后提示，人工审核代码后再提交） |
+
 ---
 
 ### 四个工作流总览
