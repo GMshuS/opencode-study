@@ -4,7 +4,7 @@
 1. [workflow 前言](#workflow-前言)
 2. [AI工作流四层落地架构](#AI工作流四层落地架构)
 3. [我的工作流](#我的工作流)
-4. [工作流实战](#工作流实战)
+4. [工作流实战案例](#工作流实战案例)
 
 ---
 
@@ -135,7 +135,7 @@ AI工作流 = 标准化作业SOP（Standard Operating Procedure，标准作业�
 ---
 
 
-### 第四层｜自研AI底座
+### 第四层｜自研AI工具底座
 
 **定位：完全自主可控的底层架构**
 
@@ -207,6 +207,41 @@ flowchart LR
 | 温度 | 0.8 发散思考 | 0.2~0.3 收敛执行 | 主控 0.0 机械调度 |
 
 > 越往右越结构化：左边管「做什么、为什么」，右边管「怎么做、做出来」
+
+**运行产物**：三个 flow 的报告与代码严格分离，产物统一写入运行目录：
+
+| 工作流 | 产物目录 | 核心产物 |
+|--------|---------|---------|
+| dev-flow | `dev-flow/{日期}/{功能名}/` | `.flow-state.json` · `plan.md`（SSOT）· `code.md` · `review.md` · `bugfix.md` · `commit-msg.txt` |
+| bugfix-flow | `bugfix-flow/{日期}/bugfix-{ID}/` | `.flow-state.json` · `fix-plan-v{N}.md` · `fix-result-v{N}.md` · `commit-msg.txt` |
+| review-flow | `review-flow/{日期}/{审查目标}/` | `.flow-state.json` · `review.md` · `bugfix.md` · `commit-msg.txt` |
+| explore | `dev-flow/explore/` | `explore-notes-{日期}-{主题}.md`（可选，用户同意才写入） |
+
+> 产物不入 git，源码目录永远干净。`commit-msg.txt` 由报告文件机械提取生成，用户审核代码后手动调用 `/git-autocommit` 提交。
+
+dev-flow 一次运行的完整产物示例：
+
+```text
+dev-flow/20260709/SmartTradeRescue_HSX/
+├── .flow-state.json     # 流程状态，断点恢复依据
+├── plan.md              # 开发计划 = 唯一真理来源（含批次锚点）
+├── code.md              # 编码成果报告
+├── review.md            # 审查报告（分级问题清单）
+├── bugfix.md            # 修复记录
+├── modified_files.txt   # 改动文件全集
+└── commit-msg.txt       # 四段式提交信息
+```
+
+bugfix-flow 单次修复的标准产物：
+
+```text
+bugfix-flow/20260728/bugfix-apply-price-precision/
+├── .flow-state.json    # 流程状态，断点恢复依据
+├── fix-plan-v1.md      # 修复方案（含 diff）
+├── errors.log          # 编译错误留痕（失败时追加）
+├── commit-msg.txt      # 四段式提交信息
+└── fix-result-v1.md    # 修复结果 + 审查报告
+```
 
 **依赖的 Skills 与 Commands**：三个 flow 共享 3 类可复用 Skill（内部调用），另有 1 个交付命令供用户审核后手动调用。explore 不依赖任何 skill：
 
@@ -291,7 +326,7 @@ stateDiagram-v2
     自由对话 --> 留待以后 : 思考本身即价值
 ```
 
-**③ 只提供方案，不决策** —— 遇到问题进行头脑风暴提出多种方案，方案选择必须由用户决策：
+**③ 只提供方案，不决策** —— 遇到问题进行头脑风暴给出多种方案，但方案选择由用户决策：
 
 ```mermaid
 flowchart LR
@@ -307,6 +342,13 @@ flowchart LR
     style EX fill:#f9f9f9
     style COMPARE fill:#e8f4fd
 ```
+
+**④ 模型温度 0.8 全场最高** —— 温度越高输出越多样，探索阶段需要的是「想到尽可能多的可能性」而非精准执行，0.8 发散度天然匹配头脑风暴与多向联想：
+
+| 对比 | explore | dev-flow 主控 | dev-code | dev-review | bugfix-flow |
+|------|---------|-------------|----------|------------|-------------|
+| 温度 | **0.8** | 0.0 | 0.3 | 0.4 | 0.3 |
+| 定位 | 最大发散 | 完全确定 | 适度灵活 | 审查发散 | 适度灵活 |
 
 #### 与下游的接力（松耦合）
 
@@ -354,6 +396,54 @@ flowchart TB
     MF -.->|"机械 grep 复选框核验"| FS
 ```
 
+#### 任务拆分与批次预计算
+
+dev-plan 在规划阶段完成两件事：**把需求拆成可执行的任务**，再**把任务组合成可调度的批次**。
+
+**为什么拆分**：
+
+| 动机 | 说明 |
+|------|------|
+| 基于功能完整性拆分 | 拆分粒度以「单元功能完整 + 可测试」为标准，而非按文件或代码行数机械切分 |
+| 防止上下文爆炸 | 长任务容易溢出模型上下文窗口，拆分后每个子会话只承载单批次 |
+| 防止任务失控 | 即使不爆窗口，长任务也容易偏离设计；分组规则将单次编码最大 token 消耗控制在 **200K 以内** |
+| 节省 token 流量 | 严格控制单次会话的 token 消耗，单次会话任务不能太大也不能太小【批次分组规则】，避免无效重试浪费 |
+
+
+
+**任务拆分规则**：
+
+```mermaid
+flowchart TB
+    subgraph STEP2["步骤2：需求分析与任务拆分"]
+        direction LR
+        A["分析用户需求<br/>拆解为功能模块"] --> B["设计架构与<br/>文件结构"]
+        B --> C["为每个功能<br/>拆解开发任务"]
+        C --> D["标注优先级/耗时/<br/>依赖/Δ代码量/验收条件"]
+    end
+
+    subgraph STEP3["步骤3：批次分组计算"]
+        direction LR
+        E["构建任务<br/>依赖图"] --> F["拓扑分层<br/>Level-0 → Level-N"]
+        F --> G["连续单层级合并<br/>受三阈值约束"]
+        G --> H["最小批次兜底<br/>单任务≤30行并入邻批"]
+    end
+
+    STEP2 --> STEP3
+```
+
+**批次分组规则**：
+
+| 约束 | 阈值 |
+|------|------|
+| Δ代码量 | ≤ 1000 行/批 |
+| 文件数 | ≤ 20 个/批 |
+| 工时 | ≤ 10h/批 |
+
+分组逻辑：依赖图拓扑分层 → 连续单层级合并（多任务层拆批、单任务层尝试合并）→ 最小批次兜底（≤30 行并入邻批）→ 批次数 > 5 输出告警。
+
+> 批次划分在规划阶段完成，编码阶段 dev-flow 只做机械调度，不做语义级分批决策。
+
 #### 关键设计
 
 | # | 机制 | 解决什么问题 |
@@ -363,7 +453,9 @@ flowchart TB
 | 3 | CheckList 机械核验 | 批次任务以复选框写入 plan.md 锚点；调度器只 grep 计数，杜绝语义误判，确保任务全部完成无遗漏 |
 | 4 | 审查-修复闭环 | 审查发现问题 → 修复 → 再审查的循环验证（≤3 轮），兼顾根因修复与多轮质量提升，超限自动终止上报 |
 | 5 | 三层重试上限 | 计划确认 ≤5 轮 / 同批重试 ≤2 次 / 修复循环 ≤3 轮，超限一律上报「请人工介入」，杜绝死循环 |
-| 6 | 温度梯度 0.0→0.4 | 调度必须完全确定(0.0)，编码适度灵活(0.3)，审查最大发散(0.4)主动找问题 |
+| 6 | 断点恢复 | 状态实时落盘 .flow-state.json，会话中断后接着上次进度继续 |
+| 7 | 温度梯度按角色分配 | 每个子 Agent 可独立`temperature`温度（OpenCode 支持，非所有工具均具备），调度 0.0 完全确定、编码 0.3 适度灵活、审查 0.4 最大发散——同一模型不同温度即不同角色 |
+| 8 | 子 Agent 独立模型配置 | 每个子 Agent 可独立配置大模型（OpenCode 支持，非所有工具均具备），按任务特性匹配模型能力：规划用轻量模型、编码/审查用强模型，类似于不同能力的人干不同的活，兼顾成本与质量 |
 
 > 口诀：**主管不懂代码只管流程，专家各干各的靠文件交接，关键节点人来把关**
 
@@ -399,15 +491,15 @@ flowchart TB
 | # | 机制 | 解决什么问题 |
 |---|------|------------|
 | 1 | 带 diff 的方案 | 修改点必须给出 diff 代码块，纯文字视为无效，杜绝「嘴上改码」 |
-| 2 | 三类人工门禁 | 方案确认 / 编译重试 / 交付确认——用户未表态禁止动一行代码 |
-| 3 | 断点恢复 | 状态实时落盘 .flow-state.json，会话中断后接着上次进度继续 |
-| 4 | 版本化 + reopen | fix-plan-v1/v2/v3 全保留可回溯；交付后发现根本性问题 → attempt+1 回炉重来（≤3 次） |
-
+| 2 | 方案即代码审查 | 方案阶段直接给出完整 diff，用户在修复前即可审核代码变更，小粒度场景下审查前置比后置更快更可控 |
+| 3 | 三类人工门禁 | 方案确认 / 编译重试 / 交付确认——用户未表态禁止动一行代码 |
+| 4 | 断点恢复 | 状态实时落盘 .flow-state.json，会话中断后接着上次进度继续 |
+| 5 | 版本化 + reopen | fix-plan-v1/v2/v3 全保留可回溯；交付后发现根本性问题 → attempt+1 回炉重来（≤3 次） |
 > 口诀：**先给 diff 人工审查再动手，门禁三道把好关，断了能续、错了能回**
 
 ---
 
-## 工作流实战
+## 工作流实战案例
 
 以下全部来自各项目仓库中的**真实运行产物**（截至 2026-08），非演示数据。
 
@@ -433,7 +525,7 @@ flowchart TB
 
 ---
 
-### 案例一：plan+Craft Agents 迁移（XtgSafeAssistant_Qt · 反外挂助手迁移）
+### 案例一：`plan + code` Agent 工作模式（XtgSafeAssistant_Qt · 反外挂助手迁移）
 
 > **反面教材**：未使用 dev-flow/bugfix-flow 工作流，仅凭 plan + 单 Agent 执行迁移
 
@@ -452,6 +544,7 @@ flowchart TB
 - CheckList 复选框核验 → TODO 无处藏身
 - 内建审查-修复循环 → 不需要另开 Agent 补漏
 - 自动生成提交信息 → 审查负担大幅降低
+- 报告文件结构化 → 格式统一、可复盘，与大模型沟通时上下文更清晰
 
 **教训**：有计划 ≠ 有执行保障。plan 解决「做什么」，dev-flow 解决「怎么做且做到位」。
 
@@ -459,22 +552,17 @@ flowchart TB
 
 ### 案例二：explore → dev-flow 接力攻坚（XtgSafeAssistant_Qt VM检测重构）
 
-反外挂的虚拟机检测模块不可靠，三天完成三轮「探索 → 开发」迭代：
+反外挂的虚拟机检测模块三天完成三轮「探索 → 开发」迭代，每轮都基于上一轮的实测反馈重新框定问题：
 
-```mermaid
-timeline
-    title VM检测模块重构时间线
-    06-29 : /explore 探测可靠性问题，产出探索笔记
-    06-30 : /dev-flow 第一轮 vm-detection-reliability 开发落地
-    06-30 : /explore 发现误报优化点，产出第二篇笔记
-    07-01 : /dev-flow 第二轮 vm-detection-optimize-false-positive
-    07-02 : /explore 提出架构级重构方案
-    07-02 : /dev-flow 第三轮 vm-detection-rearchitecture 重构落地
-```
+| 轮次 | explore 发现 | dev-flow 落地 |
+|------|-------------|---------------|
+| 第一轮 06-29→06-30 | 检测语义错位：OR 组合检查"跟VM有关"而非"运行在VM内部"；文件/服务残留导致误报 | 三级评分体系【硬件级/服务级/静态级】，加权各检测方法，阈值为 3 分|
+| 第二轮 06-30→07-01 | CPUID Hypervisor Bit 在物理机（VBS/Hyper-V/WSL2）也会置位，阈值≥3 误判 | 统一评分制（强信号3分弱信号1分） + 阈值调为 4 |
+| 第三轮 07-02 | 7个方法冗余+盲区，SystemFile/CPUID噪音大（多个弱信号累加也可能超阈值），QEMU检测遗漏 | 精简判定方法（7维度→5维度） + 两阶段判定（硬件级直接判定+弱信号CpuidVendor/Process/VmDrivers聚合超阈值判定）+ 补充QEMU检测|
 
-**接力方式**：每轮探索笔记直接作为下一轮 `/dev-flow <笔记路径>` 的输入需求文档；期间还穿插多个 bugfix-flow 小修复（qemu 检测、误报阈值等）。
+**接力方式**：每轮探索笔记直接作为下一轮 `/dev-flow <笔记路径>` 的输入需求文档；期间还穿插多个 bugfix-flow 小修复。
 
-**要点**：第一版效果不满意？不是硬着头皮修，而是回到 explore 重新框定问题，再带着新方案进 dev-flow。
+**要点**：第一版效果不满意？不是硬着头皮修，而是回到 explore 重新框定问题，再带着新方案进 dev-flow。三轮下来，检测架构从"OR 组合碰运气"演进为"两阶段确定性判定"。
 
 ---
 
@@ -511,21 +599,6 @@ timeline
 
 > 后续重构同样走此模式：`07-15 探索 CSellTask_HSX-DoTask 重构 → 当天 /dev-flow 落地`。
 
-一次 dev-flow 运行的完整产物（报告与代码分离）：
-
-```text
-dev-flow/20260709/SmartTradeRescue_HSX/
-├── .flow-state.json     # 流程状态，断点恢复依据
-├── plan.md              # 开发计划 = 唯一真理来源（含批次锚点）
-├── code.md              # 编码成果报告
-├── review.md            # 审查报告（分级问题清单）
-├── bugfix.md            # 修复记录
-├── modified_files.txt   # 改动文件全集
-└── commit-msg.txt       # 四段式提交信息
-```
-
-> commit-msg.txt 由报告文件机械提取生成，与方案文档强一致——不再手写提交信息，通过 /git-autocommit 命令提交git。
-
 ---
 
 ### 案例五：bugfix-flow 高频日常修复（SmartEazy 两个月 42 个 小需求/代码审查修复/Bug修复）
@@ -539,19 +612,6 @@ dev-flow/20260709/SmartTradeRescue_HSX/
 | bugfix-hsx-rescue-usercancel | 用户计划bx_plan_order.UserCancel撤销处理遗漏 |
 | bugfix-sql_json_parse_perf | 存储过程，大量重复 JSON 解析性能问题（先通过其它条件过滤，延后解析JSON数据） |
 | floweazy-command-timeout | 柜台慢指令偶发超时告警（改造支持慢指令独立设置超时时间） |
-
-单次修复的标准产物：
-
-```text
-bugfix-flow/20260728/bugfix-apply-price-precision/
-├── .flow-state.json    # 流程状态，断点恢复依据
-├── fix-plan-v1.md      # 修复方案（含 diff）
-├── errors.log          # 编译错误留痕（失败时追加）
-├── commit-msg.txt      # 四段式提交信息
-└── fix-result-v1.md    # 修复结果 + 审查报告
-```
-
-> commit-msg.txt 由报告文件机械提取生成，与方案文档强一致——不再手写提交信息，通过 /git-autocommit 命令提交git。
 
 ---
 
