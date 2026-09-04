@@ -1,7 +1,8 @@
 ---
 name: dev-plan
 description: 需求分析、开发计划拆解、架构设计、任务拆分
-tools: search_file, search_content, read_file, web_fetch, use_skill, web_search
+model: Hy4 preview
+tools: search_file, search_content, read_file, replace_in_file, write_to_file, web_fetch, use_skill, web_search
 agentMode: agentic
 enabled: true
 enabledAutoRun: true

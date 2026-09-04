@@ -1,6 +1,7 @@
 ---
 name: dev-bugfix
 description: 排查代码BUG、逻辑错误、异常问题，精准修复
+model: Hy4 preview
 tools: search_file, search_content, read_file, replace_in_file, write_to_file, execute_command, use_skill, delete_file, list_dir, read_lints, web_fetch, web_search
 agentMode: agentic
 enabled: true

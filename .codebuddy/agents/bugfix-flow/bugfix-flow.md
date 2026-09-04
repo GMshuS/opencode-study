@@ -1,6 +1,7 @@
 ---
 name: bugfix-flow
 description: 完整 Bug 修复流程：分析根因 → 方案确认 → 执行修复 → 编译验证 → 生成提交信息 → 总结交付
+model: GLM-5.3-Flash
 tools: list_files, search_file, search_content, read_file, read_lints, replace_in_file, write_to_file, execute_command, create_rule, delete_files, web_fetch, use_skill, web_search
 agentMode: manual
 enabled: true

@@ -1,6 +1,7 @@
 ---
 name: explore
 description: 自由探索模式 — 深度思考、问题分析、选项对比。思考伙伴，非实现工具。
+model: GLM-5.3-Flash
 tools: list_files, search_file, search_content, read_file, read_lints, replace_in_file, write_to_file, execute_command, web_fetch, use_skill, web_search
 agentMode: manual
 enabled: true

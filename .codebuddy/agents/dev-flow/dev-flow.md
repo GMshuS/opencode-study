@@ -1,6 +1,7 @@
 ---
 name: dev-flow
 description: 全流程开发总调度，自动调用计划/编码/审查/测试/修复子代理
+model: GLM-5.3-Flash
 tools: list_files, search_file, search_content, read_file, replace_in_file, write_to_file, delete_files, execute_command, create_rule, web_fetch, use_skill, web_search
 agentMode: manual
 enabled: true

@@ -1,6 +1,7 @@
 ---
-name: review-flow-fix
+name: review-fix
 description: 按修复方案实施代码修复：筛选问题 → 最小化修复 → 编译自检 → 更新验证清单
+model: Hy4 preview
 tools: search_file, search_content, read_file, replace_in_file, write_to_file, execute_command, use_skill, delete_file, list_dir, read_lints, web_fetch, web_search
 agentMode: agentic
 enabled: true

@@ -1,6 +1,7 @@
 ---
-name: review-flow-review
+name: review-review
 description: 代码审查与修复方案生成：多维度审查 → 分级问题清单 → 修复方案 → 验证清单
+model: Hy4 preview
 tools: list_files, search_file, search_content, read_file, replace_in_file, write_to_file, delete_files, execute_command, use_skill
 agentMode: agentic
 enabled: true

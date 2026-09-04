@@ -1,6 +1,7 @@
 ---
 name: review-flow
 description: 完整代码审查流程：代码审查与修复方案 → 修复实施 → 编译验证 → 总结交付
+model: Hy4 preview
 tools: list_files, search_file, search_content, read_file, read_lints, replace_in_file, write_to_file, execute_command, create_rule, delete_files, web_fetch, use_skill, web_search
 agentMode: manual
 enabled: true

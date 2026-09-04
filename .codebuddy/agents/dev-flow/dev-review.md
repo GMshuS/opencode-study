@@ -1,7 +1,8 @@
 ---
 name: dev-review
 description: 代码质量审查、编译测试、安全检测、优化建议
-tools: list_files, search_file, search_content, read_file, execute_command, use_skill
+model: Hy4 preview
+tools: list_files, search_file, search_content, read_file, replace_in_file, write_to_file, execute_command, use_skill
 agentMode: agentic
 enabled: true
 enabledAutoRun: true
