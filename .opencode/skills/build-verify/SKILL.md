@@ -45,6 +45,24 @@ description: 代码变更后执行构建验证。根据语言、项目结构、�
 | Python | .py | ruff format, black | ruff, flake8, pylint | mypy, pyright | python -m py_compile |
 | Rust | .rs | rustfmt | cargo clippy | cargo check | cargo build (Debug) |
 
+### 步骤 1.5：Windows MSVC 工具链探测
+
+**触发条件**：变更含 C/C++ 文件且目标为 Windows（有 .vcxproj / .sln，或 CMakeLists.txt 声明 MSVC）。否则整节跳过。
+
+用 vswhere 定位 `VsDevCmd.bat`：
+
+```cmd
+"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -all -prerelease -products * -property installationPath
+```
+
+- 取输出路径拼接 `\Common7\Tools\VsDevCmd.bat`
+- **多结果时按项目 `.vcxproj` / `.props` 的 `<PlatformToolset>` 选择对应 VS 版本**，禁止"取最新"或"取第一行"——
+  vswhere 输出不保证按版本排序，且最新的 BuildTools 常缺 MFC 等组件，会导致 `UseOfMfc` 项目失败
+- vswhere.exe 不存在 → 枚举常见安装位置（含 `C:\CommonDev\` 等自定义路径）下的 `Common7\Tools\VsDevCmd.bat`
+
+**失败时**：降级 `cl.exe /c /Zs` 语法检查（cl 不在 PATH 则跳过），报告中说明原因。
+⚠️ 禁止断言"未安装 MSVC"——可能只是未探测到；此时提示用户可用 `MSVC_VSDEVCMD_PATH` 环境变量强制指定。
+
 ### 步骤 2：静态检查
 
 按步骤 1 语言映射表中的工具，对变更文件涉及的语言依次执行格式→Lint→类型→语法检查。仅执行变更语言对应的检查项，每项独立运行并报告。
@@ -64,8 +82,11 @@ description: 代码变更后执行构建验证。根据语言、项目结构、�
 | **Qt (qmake, Windows)** | `qmake "CONFIG+=debug" "CONFIG+=qml_debug" && jom -j$(nproc)` |
 | **Qt (CMake)** | `cmake -B build -DCMAKE_BUILD_TYPE=Debug && cmake --build build -j$(nproc)` |
 | **CMake 通用** | `cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug && cmake --build build -j$(nproc)` |
-| **MSVC (sln/vcxproj)** | `msbuild /p:configuration=Debug /m` |
+| **MSVC (sln/vcxproj)** | `call "<步骤 1.5 探测到的 VsDevCmd.bat>" -arch=x64 && msbuild <sln 或 vcxproj> /p:Configuration=Debug /p:Platform=x64 /m` |
 | **Generic Makefile** | `make -j$(nproc)` |
+
+> ⚠️ `VsDevCmd.bat` 设置的 PATH / INCLUDE / LIB **仅对当前 shell 会话有效**，必须与 `msbuild` 用 `&&` 写在**同一条命令**里，
+> 否则报 `cl.exe 不是内部或外部命令` / `MSB4019`。非 cmd 环境用 `cmd /c "call ... && msbuild ..."` 包裹。
 
 三级分级均使用上表命令执行**增量 Debug 构建**。构建系统自行处理模块依赖、头文件追踪与产物缺失，AI 不编排编译顺序。重大级别唯一区别如下：
 
