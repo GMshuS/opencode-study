@@ -168,8 +168,7 @@ sequenceDiagram
         ├── review.md             # 审查报告（每轮覆盖）
         ├── bugfix.md             # 修复报告（逐轮追加）
         ├── skipped_tasks.txt     # 跳过任务清单（有跳过时生成）
-        ├── modified_files.txt    # 合并去重的改动文件清单
-        └── commit-msg.txt        # 提交信息素材（需求概述/修改说明/测试建议）
+        └── commit-msg.txt        # 统一格式提交信息 + `--- MODIFIED FILES ---` 分隔的改动文件清单
 ```
 
 | 产物文件 | 写入者 | 写入时机 | 作用 |
@@ -180,8 +179,7 @@ sequenceDiagram
 | `review.md` | dev-review | 每轮审查覆盖 | 分级问题清单（C/M/m/P + ID）、验证清单、审查结论 |
 | `bugfix.md` | dev-bugfix | 每轮修复追加 | 根因分析、已修复/未修复问题、修改文件列表 |
 | `skipped_tasks.txt` | dev-flow | 终检发现跳过项时 | 交付时向用户明示哪些任务被放弃及原因 |
-| `modified_files.txt` | dev-flow | 步骤4 交付时 | 从 code.md/bugfix.md 机械合并的改动文件全集 |
-| `commit-msg.txt` | dev-flow | 步骤4 交付时 | 从 plan.md 机械提取的提交信息素材（需求概述/修改说明/测试建议），配合 `/git-autocommit` |
+| `commit-msg.txt` | dev-flow | 步骤4 交付时 | 调用 `commit-msg-format` skill 生成统一格式提交信息（需求概述/修改原因/修改说明/测试建议），配合 `/git-autocommit` |
 
 ### 2.4 配置属性
 
@@ -255,7 +253,7 @@ flowchart TD
     ITER -->|"是"| FIX["步骤3.2 调用 dev-bugfix<br/>iteration += 1 · status=bugfixed"]
     FIX --> REVIEW
 
-    DELIVER["步骤4 交付<br/>机械提取生成 modified_files.txt<br/>+ commit-msg.txt"] --> DONE(["status=delivered<br/>汇总交付 · 提示 /git-autocommit"])
+    DELIVER["步骤4 交付<br/>调用 commit-msg-format<br/>生成 commit-msg.txt"] --> DONE(["status=delivered<br/>汇总交付 · 提示 /git-autocommit"])
 ```
 
 各步骤要点：

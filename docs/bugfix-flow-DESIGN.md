@@ -97,7 +97,7 @@ flowchart LR
         ├── .flow-state.json        # 流程状态（断点恢复依据）
         ├── fix-plan-v1.md          # 修复方案，版本号 = attempt
         ├── errors.log              # 编译错误记录（失败时追加）
-        ├── commit-msg.txt          # 四段式提交信息 + 修改文件清单
+        ├── commit-msg.txt          # 统一格式提交信息 + `--- MODIFIED FILES ---` 分隔的改动文件清单
         └── fix-result-v1.md        # 修复结果 + 验证记录
 ```
 
@@ -106,7 +106,7 @@ flowchart LR
 | `.flow-state.json` | 每次状态变化 | 记录 `status`/`problem`/`attempt`，重启后据此恢复 |
 | `fix-plan-v{n}.md` | 步骤 1 | 根因分析、复现流程、**带 diff 的修改点列表**、影响范围 |
 | `errors.log` | 步骤 3 失败时 | 编译错误现场，服务当次重试分析与 reopen 补充分析 |
-| `commit-msg.txt` | 步骤 4 | 交付物之一，供 `@git-autocommit` 直接使用 |
+| `commit-msg.txt` | 步骤 4 | 调用 `commit-msg-format` skill 生成（问题来源/修改原因/修改说明/测试建议），供 `@git-autocommit` 直接使用 |
 | `fix-result-v{n}.md` | 步骤 4 | 修复状态、修改文件、构建/类型/Linter 三项验证结论 |
 
 > 版本规则：文件名固定携带 `-v{attempt}` 后缀；`attempt == 1` 时屏幕提示不带标记，否则追加 `(第{n}次修复)`。历史版本永久保留，供 reopen 回溯。

@@ -156,16 +156,15 @@ $MODIFIED_FILES = []
 
 生成 4 段式提交信息并汇总交付文档：
 
-1. **生成提交信息**
-   - 从修复产出的报告文件机械提取 commit message 素材：
-     - 问题来源：从 `.flow-state.json` 的 `problem` 字段提取（用户原始问题描述摘要）
-     - 问题原因：从 `fix-plan-v{$ATTEMPT}.md` "根因分析"段提取（精简到 1-2 句）
-     - 修改说明：从 `fix-plan-v{$ATTEMPT}.md` "修改点列表"段汇总简明实现说明（面向业务，不贴 diff 代码）
-     - 测试建议：从 `fix-plan-v{$ATTEMPT}.md` "影响范围"段提取，补充可操作的验证步骤
-   - 按格式写入 `$DOC_PATH/commit-msg.txt`
-2. 将 `$MODIFIED_FILES` 追加到 `$DOC_PATH/commit-msg.txt`
-3. 更新 state：`{ ..., status: "delivered" }`
-4. 写入 `$DOC_PATH/fix-result-v{$ATTEMPT}.md`，内容要求如下：
+1. **生成提交信息**：调用 `commit-msg-format` skill 生成 `$DOC_PATH/commit-msg.txt`
+   骨架：`{type}: {标题}` / `问题来源：..`（单行）/ `修改原因：..`（单行）/ `修改说明：` 换行 `1) ..` / `测试建议：` 换行 `1) ..` / `--- MODIFIED FILES ---` / `- {相对路径}`
+   - 问题来源：`.flow-state.json` 的 `problem` 字段
+   - 修改原因：`fix-plan-v{$ATTEMPT}.md`「根因分析」段
+   - 修改说明：同上「修改点列表」段（面向业务，不贴 diff）
+   - 测试建议：同上「影响范围」段
+   - 改动文件清单：`$MODIFIED_FILES`（相对路径、去重）
+2. 更新 state：`{ ..., status: "delivered" }`
+3. 写入 `$DOC_PATH/fix-result-v{$ATTEMPT}.md`，内容要求如下：
     ```markdown
     # Bug 修复结果
 
@@ -180,13 +179,13 @@ $MODIFIED_FILES = []
     - 类型检查：【通过/失败/跳过】
     - Linter：【通过/发现问题】
     ```
-5. 终端展示精简摘要并等待用户确认：
+4. 终端展示精简摘要并等待用户确认：
     ```
     ────────────────────────────────────────
      Bug 修复完成：bugfix-$BUGFIX_ID$ATTEMPT_TAG
 
      问题来源：[commit-msg.txt 的问题来源]
-     问题原因：[commit-msg.txt 的问题原因]
+     修改原因：[commit-msg.txt 的修改原因]
      修改：[$MODIFIED_FILES 个数] 个文件
 
      报告文件:
