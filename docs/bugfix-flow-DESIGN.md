@@ -121,7 +121,7 @@ flowchart LR
 | `name` | `bugfix-flow` | 注册名，被 command 的 `agent:` 字段引用 |
 | `temperature` | `0.3` | 低温度保证根因分析与 diff 修改稳定可复现，保留少量发散空间用于排查思路 |
 | `tools` | read / write / edit / bash / webfetch 全开 | 内联架构要求自身具备完整能力：读码分析、改码、跑构建、查资料 |
-| `permissions.bash."*"` | `allow` | 放行全部 bash 命令（git / 编译器 / linter 等），风险由 P3/P4 的人工门禁与重试上限补偿 |
+| `permission.bash."*"` | `allow` | 放行全部 bash 命令（git / 编译器 / linter 等），风险由 P3/P4 的人工门禁与重试上限补偿 |
 | `model` | `opencode/deepseek-v4-flash-free` | 轻量快速模型，匹配流程型任务的成本诉求 |
 
 > ⚠️ 取舍说明：bash 全放行 + 编辑权限意味着 Agent 可直接改动仓库，这是"少摩擦"的有意取舍；安全性依赖三道人工门禁与有限重试机制约束。

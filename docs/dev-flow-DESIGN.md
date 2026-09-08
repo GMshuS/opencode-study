@@ -193,7 +193,7 @@ sequenceDiagram
 | `write` / `edit` | ✓ / ✓ | ✓ / ✓ | ✓ / ✓ | ✓ / ✓ | ✓ / ✓ |
 | `bash` | ✓ | **✗** | ✓ | ✓ | ✓ |
 | `webfetch` | ✓ | ✓ | ✓ | ✗ | ✗ |
-| `permissions` | bash 全放行 | （无显式配置） | write/edit/bash 放行 | **all: ask** + bash 放行 | edit/bash 放行 |
+| `permission` | bash 全放行 | （无显式配置） | edit/bash 放行 | **edit 路径收敛** + bash 放行 | edit/bash 放行 |
 | `model` | deepseek-v4-flash-free | 同左 | 同左 | 同左 | 同左 |
 
 **温度梯度设计意图**——按"创造性需求"递增分配：
@@ -210,7 +210,8 @@ dev-review 0.4 ── 审查需要最大发散度，主动发掘清单之外的�
 
 - dev-flow/bash 全放行但提示词严禁读源码——它只需要 mkdir/echo/grep 等机械命令；
 - dev-plan 是唯一禁用 bash 的角色——只读规划不允许执行任何命令；
-- dev-review 设置 `all: ask` 兜底（除 bash 外的新工具默认询问），因为它要跑构建/测试，动作最多；
+- dev-review 采用**路径收敛**：`edit: {"*": ask, "dev-flow/**": allow}`——写 `$DOC_PATH/`（即 `dev-flow/$DATE/$FEATURE_NAME/`）报告免确认，改项目源码才询问；bash 显式放行用于跑构建/测试；
+- 只有 dev-review 用路径收敛——dev-code / dev-bugfix 的核心职责就是写源码，套 `"*": ask` 会导致每个文件写入都弹窗，故维持 `edit: allow`；
 - 所有角色均可写 `$DOC_PATH/` 报告文件，但只有 dev-code 和 dev-bugfix 允许修改项目源码。
 
 ---

@@ -175,7 +175,7 @@ sequenceDiagram
 | `temperature` | **0.2** | **0.4** | 0.3 |
 | read / write / edit / bash | ✓ / ✓ / ✓ / ✓ | ✓ / ✓ / **✗** / ✓ | ✓ / ✓ / ✓ / ✓ |
 | `webfetch` | ✓ | ✗ | ✗ |
-| `permissions` | bash 全放行 | **all: ask** + write 放行 + bash 放行 | edit / bash 放行 |
+| `permission` | bash 全放行 | **edit 放行** + bash 放行 | edit / bash 放行 |
 | `model` | opencode-go/deepseek-v4-flash | 同左 | 同左 |
 
 **温度梯度设计意图**——按"创造性需求"递增分配：
@@ -189,7 +189,7 @@ review-flow-review 0.4 ── 审查需要最大发散度，主动发掘清单�
 **权限取舍说明**：
 
 - review-flow 的 bash 全放行但红线严禁读源码——它只需要 `date` / `mkdir` / `echo` 等机械命令；
-- review-flow-review 是唯一 `edit: false` 的角色——只读源码不改码，写权限仅限 `review.md`；`all: ask` 兜底（bash 显式放行用于跑构建验证）；
+- review-flow-review 是唯一 `tools.edit: false` 的角色——只读源码不改码，`permission.edit: allow` 仅放行写 `review.md`（edit 工具由 `tools.edit: false` 关闭）；bash 显式放行用于跑构建验证；
 - review-flow-fix 允许 edit——它是唯一实际修改项目源码的角色；
 - 三个角色均不共享上下文，一切以 `$DOC_PATH/` 文件为准。
 

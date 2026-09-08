@@ -5,7 +5,6 @@
 2. [AI工作流四层落地架构](#AI工作流四层落地架构)
 3. [我的工作流](#我的工作流)
 4. [工作流实战案例](#工作流实战案例)
-5. [未来改进方向](#未来改进方向)
 
 ---
 
@@ -15,7 +14,7 @@
 
 **一句话定义：**
 
-AI工作流就是**给AI定好办事流程**，把复杂任务拆成「一步步固定步骤」，让AI按顺序、按规则自动干完。
+AI工作流就是**给AI定好办事流程**，把复杂任务拆成「一步步固定步骤」，让AI按顺序、按规则自动执行。
 
 **比喻**：
 
@@ -53,10 +52,6 @@ AI工作流 = 标准化作业SOP（Standard Operating Procedure，标准作业�
 
 从低门槛到高定制，逐层递进：
 
-**1. 无代码平台编排（快速落地）｜2. 自定义Skill/Command（可复用原子能力）｜3. 自定义Agent（SOP固化）｜4. 自研AI工具底座（完全自主可控）**
-
-层级关系：**自研底座 → 支撑Agent → 装配Skill → 编排落地**
-
 ---
 
 ### 第一层｜无代码平台编排（快速落地的标准化流程工具）
@@ -91,7 +86,7 @@ AI工作流 = 标准化作业SOP（Standard Operating Procedure，标准作业�
 
 **定位：可复用的AI原子能力**
 
-**做法**：把单一功能封装为独立的 Skill/Command 文件（如代码审查、构建验证），供 Agent 按需加载；也可借助 OpenSpec/SpecKit 等工具将多个能力组织成结构化开发流程。
+**做法**：把单一功能封装为独立的 `Skill/Command` 文件（如代码审查、构建验证），手动或供 Agent 按需加载；也可借助 OpenSpec/SpecKit 等工具自动生成工作流子步骤的 `Skill/Command`，手动或通过 OpenSpec/SpecKit 调度这些子步骤。
 
 **优点**
 
@@ -109,7 +104,7 @@ AI工作流 = 标准化作业SOP（Standard Operating Procedure，标准作业�
 
 - 需要依靠工作流/Agent调度才能生效
 
-**口诀：能力可复用，只管干活，复杂流程干不了**
+**口诀：能力可复用，只管干活，复杂流程专业化不够**
 
 ---
 
@@ -117,7 +112,7 @@ AI工作流 = 标准化作业SOP（Standard Operating Procedure，标准作业�
 
 **定位：用提示词把 SOP 固化成智能体**
 
-**做法**：把「步骤顺序 + 约束 + 产物约定」写进 Agent 定义文件，AI 按流程办事；专项能力再委托给 Skill 复用。
+**做法**：把「步骤顺序 + 约束 + 产物约定」写进 Agent 定义文件，AI 按流程办事；专项能力也可以委托给 Skill 复用。
 
 **优点**
 
@@ -131,13 +126,13 @@ AI工作流 = 标准化作业SOP（Standard Operating Procedure，标准作业�
 
 **缺点**
 
-- 寄生于宿主工具（OpenCode/CodeBuddy），受其能力边界限制，强依赖宿主工具
+- 寄生于宿主工具（OpenCode/CodeBuddy等），受其能力边界限制，强依赖宿主工具
 
 - 流程逻辑写在自然语言里，改流程 = 改提示词且需回归验证
 
 - 长流程受上下文窗口限制，须靠文件落盘传递上下文、多Agent串联
 
-- 执行质量仍取决于底层模型，不确定性需门禁与重试上限兜底
+- 执行质量仍取决于底层模型，不确定性需添加约束来兜底
 
 **口诀：SOP 写进提示词，门禁把关才靠谱**
 
@@ -185,10 +180,10 @@ AI工作流 = 标准化作业SOP（Standard Operating Procedure，标准作业�
 
 ## 我的工作流
 
-基于第三层「自定义Agent」（OpenCode/CodeBuddy），我在日常开发中落地了一套 **4 个工作流的组合拳**：
+基于第三层「自定义Agent」，我在日常开发中落地了一套 **4 个工作流的组合拳**（目前已经支持OpenCode/CodeBuddy）：
 
 - 1 个前置伪工作流：**explore**（探索思考）
-- 3 个执行型工作流：**dev-flow**（中大型需求开发）/ **bugfix-flow**（小需求开发/Bug修复）/ **review-flow**（代码审查）
+- 3 个执行型工作流：**dev-flow**（中大型需求开发）/ **bugfix-flow**（小需求开发/代码审查问题修复/Bug修复）/ **review-flow**（代码审查）
 
 ---
 
@@ -199,7 +194,7 @@ AI工作流 = 标准化作业SOP（Standard Operating Procedure，标准作业�
 ```mermaid
 flowchart LR
     IDEA(["模糊想法 / Bug / 存量代码"]) --> EX["explore 探索<br/>想清楚：问题分析 · 方案对比 · 风险识别"]
-    EX -->|"功能要落地"| DEV["dev-flow 功能开发<br/>规划→编码→审查→交付"]
+    EX -->|"功能要落地"| DEV["主Agent dev-flow 功能开发<br/>规划→编码→审查→交付"]
     EX -->|"缺陷要修复"| BF["bugfix-flow Bug修复<br/>分析→修复→验证→提交"]
     EX -.->|"只是想明白了，暂不做"| END(["结束"])
     OLD(["存量老代码"]) --> RV["review-flow 代码审查<br/>审查→分级→定向修复"]
@@ -212,47 +207,34 @@ flowchart LR
 
 | 维度 | explore | bugfix-flow | dev-flow / review-flow |
 |------|---------|-------------|------------------------|
-| 形态 | 立场驱动 | 单 Agent 内联 | 多 Agent 编排 |
+| 形态 | 单 Agent 立场驱动 | 单 Agent 内联 | 多 Agent 编排 |
 | 步骤 / 门禁 | 零步骤 · 零门禁 | 4 步骤 · 3 类门禁 | 状态机 · 批次 · 人工门禁 |
 | 耗时 | 无固定 | 分钟级 | 小时级 |
-| 温度 | 0.8 发散思考 | 0.2~0.3 收敛执行 | 主控 0.0 机械调度 |
+| 温度 | 0.8 发散思考 | 0.2~0.3 收敛执行 | 0.0~0.4 灵活调控 |
 
 > 越往右越结构化：左边管「做什么、为什么」，右边管「怎么做、做出来」
 
-**运行产物**：三个 flow 的报告与代码严格分离，产物写入指定目录：
-
-| 工作流 | 产物目录 | 核心产物 |
-|--------|---------|---------|
-| dev-flow | `dev-flow/{日期}/{功能名}/` | `.flow-state.json` · `plan.md`（SSOT）· `code.md` · `review.md` · `bugfix.md` · `commit-msg.txt` |
-| bugfix-flow | `bugfix-flow/{日期}/bugfix-{ID}/` | `.flow-state.json` · `fix-plan-v{N}.md` · `fix-result-v{N}.md` · `commit-msg.txt` |
-| review-flow | `review-flow/{日期}/{审查目标}/` | `.flow-state.json` · `review.md` · `bugfix.md` · `commit-msg.txt` |
-| explore | `dev-flow/explore/` | `explore-notes-{日期}-{主题}.md`（可选，用户同意才写入） |
-
-> 产物不入 git，源码目录永远干净。`commit-msg.txt` 由报告文件机械提取生成，用户审核代码后手动调用 `/git-autocommit` 提交。
-
-dev-flow 一次运行的完整产物示例：
+**四个工作流的 Agent 目录结构**：
 
 ```text
-dev-flow/20260709/SmartTradeRescue_HSX/
-├── .flow-state.json     # 流程状态，断点恢复依据
-├── plan.md              # 开发计划 = 唯一真理来源（含批次锚点）
-├── code.md              # 编码成果报告
-├── review.md            # 审查报告（分级问题清单）
-├── bugfix.md            # 修复记录
-├── modified_files.txt   # 改动文件全集
-└── commit-msg.txt       # 四段式提交信息
+.opencode/agents/
+├── explore/
+│   └── explore.md               # 探索思考（单 Agent，无固定流程）
+├── dev-flow/
+│   ├── dev-flow.md              # 主调度 Agent（纯调度，只传参/决策/汇总）
+│   ├── dev-plan.md              # 规划子 Agent（需求分析 + 任务拆分）
+│   ├── dev-code.md              # 编码子 Agent（按批次编码）
+│   ├── dev-review.md            # 审查子 Agent（多维审查 + 分级问题）
+│   └── dev-bugfix.md            # 修复子 Agent（根因定位 + 最小化修复）
+├── bugfix-flow/
+│   └── bugfix-flow.md           # 单 Agent 内联（分析→编码→验证→交付）
+└── review-flow/
+    ├── review-flow.md            # 主调度 Agent（纯调度，只传参/门禁/汇总）
+    ├── review-review.md          # 审查子 Agent（多维审查 + 分级问题清单）
+    └── review-fix.md             # 修复子 Agent（最小化修复 + 逐项核验）
 ```
 
-bugfix-flow 单次修复的标准产物：
-
-```text
-bugfix-flow/20260728/bugfix-apply-price-precision/
-├── .flow-state.json    # 流程状态，断点恢复依据
-├── fix-plan-v1.md      # 修复方案（含 diff）
-├── errors.log          # 编译错误留痕（失败时追加）
-├── commit-msg.txt      # 四段式提交信息
-└── fix-result-v1.md    # 修复结果 + 审查报告
-```
+> dev-flow 有 5 个 Agent（1 主 + 4 子），review-flow 有 3 个 Agent（1 主 + 2 子），bugfix-flow 只有 1 个 Agent（单 Agent 内联），explore 也只有 1 个 Agent（单 Agent 立场驱动）。
 
 **依赖的 Skills 与 Commands**：三个 flow 共享 3 类可复用 Skill（内部调用），另有 1 个交付命令供用户审核后手动调用。explore 不依赖任何 skill：
 
@@ -280,7 +262,8 @@ flowchart LR
 | Skill | `language-detect` | 扫描项目文件自动识别语言，实现`按需动态`加载对应编码规范`xxx-coding-standards` | dev-plan / bugfix-flow / review-flow-review |
 | Skill | `xxx-coding-standards` | 5 种语言的编码规范（C++/Go/JS/Python/SQL）, 可以被`language-detect`主动加载，也可以被`Agent`按Skill规则加载 | dev-code / dev-review / dev-bugfix / bugfix-flow / review-flow-fix |
 | Skill | `build-verify` | 小型工作流：静态检查（如：C/C++的cppcheck/clang-tidy） → 编译验证（最低保障能编译通过） → 结构化报告 | dev-review / dev-bugfix / bugfix-flow / review-flow |
-| Command | `/git-autocommit` | 小型工作流：分析变更 -> 生成四段式提交信息 -> 自动Commit -> 用户确认是否push | **用户手动调用**（flow 交付后提示，人工审核代码后再提交） |
+| Skill | `commit-msg-format` | 三个 flow 共用的 `commit-msg.txt` **统一格式定义**（标题 + 四段式 + `--- MODIFIED FILES ---` 分隔符） | dev-flow / bugfix-flow / review-flow |
+| Command | `/git-autocommit` | 小型工作流：分析变更 -> 生成四段式提交信息 -> 自动Commit -> 用户确认是否push（传入 commit-msg.txt 时按分隔符取提交信息） | **用户手动调用**（flow 交付后提示，人工审核代码后再提交） |
 
 ---
 
@@ -289,8 +272,8 @@ flowchart LR
 | 工作流 | 一句话定位 | 架构模式 | 适用场景 | 设计文档 |
 |--------|-----------|---------|---------|----------|
 | explore | 思考伙伴：动手前先把问题想清楚 | 立场驱动 · 零流程 | 需求分析、技术选型、方案对比、代码疑问 | [explore-DESIGN.md](./explore-DESIGN.md) |
-| bugfix-flow | 小需求/Bug修复快车道：分钟级闭环 | 单 Agent 内联（4 步骤） | 小型需求、Bug 的快速修复与验证 | [bugfix-flow-DESIGN.md](./bugfix-flow-DESIGN.md) |
-| dev-flow | 全流程开发流水线：一条命令从需求到交付 | 多 Agent 编排（1 主 + 4 子） | 从零开发完整功能、大型需求，小时级多批次 | [dev-flow-DESIGN.md](./dev-flow-DESIGN.md) |
+| bugfix-flow | 小需求/Bug修复快车道：分钟级闭环 | 单 Agent 内联（4 步骤） | 小型需求、代码审查问题修复、Bug 的快速修复与验证 | [bugfix-flow-DESIGN.md](./bugfix-flow-DESIGN.md) |
+| dev-flow | 全流程开发流水线：一条命令从需求到交付 | 多 Agent 编排（1 主 + 4 子） | 从零开发完整功能、大型需求，小时级多批次任务 | [dev-flow-DESIGN.md](./dev-flow-DESIGN.md) |
 | review-flow | 存量代码体检：先审查再自选范围修复 | 多 Agent 编排（1 主 + 2 子） | 老代码质量治理、模块级代码审查 | [review-flow-DESIGN.md](./review-flow-DESIGN.md) |
 
 下面按使用频率依次介绍四个工作流。
@@ -310,7 +293,7 @@ flowchart LR
 | 必须产物 | plan.md 等 | 无必须产出，笔记可选 |
 | 结束条件 | 交付等明确终点 | 没有终点，随时可走可留 |
 
-#### 关键设计【部分参考openspec的explore设计】
+#### 关键设计【参考了openspec的explore设计原理】
 
 **① 宽读窄写的漏斗权限** —— 读得宽（全库+外网免确认），写得窄（源代码零写入）：
 
@@ -354,12 +337,14 @@ flowchart LR
     style COMPARE fill:#e8f4fd
 ```
 
-**④ 模型温度 0.8 全场最高** —— 温度越高输出越多样，探索阶段需要的是「想到尽可能多的可能性」而非精准执行，0.8 发散度天然匹配头脑风暴与多向联想：
+**④ 模型温度`temperature` 0.8 全场最高** —— 温度越高输出越多样，探索阶段需要的是「想到尽可能多的可能性」而非精准执行，0.8 发散度天然匹配头脑风暴与多向联想：
 
-| 对比 | explore | dev-flow 主控 | dev-code | dev-review | bugfix-flow |
-|------|---------|-------------|----------|------------|-------------|
-| 温度 | **0.8** | 0.0 | 0.3 | 0.4 | 0.3 |
-| 定位 | 最大发散 | 完全确定 | 适度灵活 | 审查发散 | 适度灵活 |
+| 对比 | explore | dev-flow | review-flow | bugfix-flow |
+|------|---------|-------------|----------|------------|
+| 温度 | **0.8** | 0.0~0.4 | 0.0~0.4 | 0.3 |
+| 定位 | 最大发散 | 灵活调控 | 灵活调控 | 适度灵活 |
+
+> **`temperature`**是控制**大模型脑洞大小、随机程度**的参数，取值一般 `0~1`，通俗来说 `temperature值越高大模型越放飞，越低越老实`。
 
 #### 与下游的接力（松耦合）
 
@@ -392,40 +377,54 @@ flowchart LR
 
 #### 架构：一个「不懂代码的主管」带 4 个专家
 
-主 Agent 是**纯调度器**——只做传参、决策、汇总，禁止读源码、评方案；所有技术活下放给 4 个SubAgent，彼此不共享上下文，靠文件接力（文件即契约）：
+主 Agent 是**纯调度器**——只做传参、决策、汇总，禁止读源码、评方案；所有技术活下放给 4 个SubAgent；彼此的上下文隔离，依靠文件通信（文件即契约）：
 
 ```mermaid
 flowchart TB
-    U(["/dev-flow 需求"]) --> MF["dev-flow 主Agent<br/>纯调度 · temp 0.0<br/>只传参/决策/汇总"]
-    MF -->|"步骤1 规划"| P["dev-plan 只读规划<br/>产出计划+预计算批次"]
-    MF -->|"步骤2 分批编码"| C["dev-code<br/>按批编码·勾选任务"]
-    MF -->|"步骤3.1 审查"| R["dev-review<br/>多维审查·分级问题"]
-    MF -->|"步骤3.2 修复"| B["dev-bugfix<br/>根因定位·最小化修复"]
+    U(["/dev-flow 需求"]) --> MF["主Agent<br/>dev-flow 纯调度<br/>只传参/决策/汇总"]
+    MF -->|"步骤1 规划"| P["SubAgent<br/>dev-plan 开发计划<br/>分析需求+任务分批"]
+    P -->|"plan.md"| FS[("报告文件区 $DOC_PATH/<br/>plan.md = 唯一真理来源 SSOT")]
+    FS -->|"用户确认计划"| U2(["👤 用户确认"])
+    U2 -->|"通过"| MF2["主Agent 继续调度"]
+    U2 -->|"驳回 → 重新规划"| P
+    MF2 -->|"步骤2 分批编码"| C["SubAgent<br/>dev-code 编码<br/>按批编码·勾选任务"]
+    MF2 -->|"步骤3.1 审查"| R["SubAgent<br/>dev-review 代码审查<br/>多维审查·分级问题"]
+    R -->|"步骤3.2 问题修复"| B["SubAgent<br/>dev-bugfix 问题修复<br/>根因定位·最小化修复"]
+    B -->|"修复后重新审查 ≤3轮"| R
 
-    FS[("报告文件区 $DOC_PATH/<br/>plan.md = 唯一真理来源 SSOT")]
-    P & C & R & B <-->|"自行读写报告"| FS
+    C & R & B <-->|"自行读写报告"| FS
     MF -.->|"机械 grep 复选框核验"| FS
+```
+
+dev-flow 一次运行的完整产物示例：
+
+```text
+dev-flow/20260709/SmartTradeRescue_HSX/
+├── .flow-state.json     # 流程状态，断点恢复依据
+├── plan.md              # 开发计划 = 唯一真理来源（含批次锚点）
+├── code.md              # 编码成果报告
+├── review.md            # 审查报告（分级问题清单）
+├── bugfix.md            # 修复记录
+└── commit-msg.txt       # 统一格式提交信息（问题来源/修改原因/修改说明/测试建议）+ `--- MODIFIED FILES ---` 分隔的改动文件清单
 ```
 
 #### 关键设计
 
 | # | 机制 | 解决什么问题 |
 |---|------|------------|
-| 1 | 主Agent纯调度编排 | dev-flow 主 Agent 只做三件事：**传参、决策、汇总**，禁止读取源码、评判方案、分析 git diff——所有技术判断下放给子代理 |
-| 2 | 文件即契约 | SubAgent 间靠 plan/code/review 报告接力，增减字段只改对应 SubAgent 定义，主流程零改动，不通过主 Agent 通信，减少 Token 消耗 |
-| 3 | 审查-修复闭环 | 审查发现问题 → 修复 → 再审查的循环验证（≤3 轮），兼顾根因修复与多轮质量提升，超限自动终止上报 |
+| 1 | 主Agent纯调度编排 | dev-flow 主 Agent 只做三件事：**传参、决策、汇总**，禁止读取源码、评判方案、分析 git diff——所有技术判断下放给SubAgent |
+| 2 | 文件即契约 | SubAgent 间靠 plan/code/review 报告接力，协议修改只改对应 SubAgent 定义，主流程零改动；不通过主 Agent 通信，一定程度减少 Token 消耗；过程留痕，可追溯 |
+| 3 | 审查-修复闭环 | 审查发现问题 → 修复 → 再审查的循环验证（≤3 轮），兼顾根因修复与多轮质量提升，超限自动终止并上报异常 |
 | 4 | 三层重试上限 | 计划确认 ≤5 轮 / 同批重试 ≤2 次 / 修复循环 ≤3 轮，超限一律上报「请人工介入」，杜绝死循环 |
 | 5 | 断点恢复 | 状态实时落盘 .flow-state.json，会话中断后接着上次进度继续 |
 | 6 | 独立模型配置 | 每个子 Agent 可独立配置`Model`大模型，按任务特性匹配模型能力：规划用轻量模型、编码/审查用强模型，兼顾成本与质量 |
-| 7 | 温度梯度按角色分配 | 每个子 Agent 可独立`temperature`温度（OpenCode 支持，非所有工具均具备），`dev-flow`调度 0.0 完全确定、`dev-code`编码 0.3 适度灵活、`dev-review`审查 0.4 最大发散 |
+| 7 | 温度梯度按角色分配 | 每个子 Agent 可独立配置温度`temperature`（OpenCode 支持，非所有工具均具备）：`dev-flow`调度 0.0 完全确定、`dev-code`与`dev-bugfix` 编码 0.3 适度灵活、`dev-review`审查 0.4 最大发散 |
 | 8 | 计划确认门禁 | 计划必须经用户点头才能编码，AI 不擅自开工，限制修改轮次（≤5 轮），避免模型跑偏后做无用功 |
-| 9 | CheckList 机械核验 | 批次任务以复选框写入 plan.md 锚点；调度器只 grep 计数，杜绝语义误判，确保任务全部完成无遗漏 |
+| 9 | CheckList 机械核验 | dev-plan 生成任务前置复选框[ ]; dev-code 完成编码后更新任务状态[×]; dev-flow 调度器只 grep 机械检查任务状态，确保任务全部完成无遗漏 |
 
 > 口诀：**主管不懂代码只管流程，专家各干各的靠文件交接，关键节点人来把关**
 
 #### dev-plan 的任务拆分逻辑
-
-dev-plan 在规划阶段完成两件事：**把需求拆成可执行的任务**，再**把任务组合成可调度的批次**。
 
 **为什么拆分**：
 
@@ -457,7 +456,7 @@ flowchart TB
     STEP2 --> STEP3
 ```
 
-> 任务合并分组后，每组任务运行在一个独立的会话的 dev-code 子Agent中，避免上下文爆炸。
+> 任务合并分组后，每组任务运行在一个独立的会话的 dev-code SubAgent中，避免上下文爆炸。
 
 **批次分组三阈值标准**：
 
@@ -483,6 +482,17 @@ flowchart TB
 分析 → 方案确认 → 执行修复 → 编译验证 → 生成Git提交信息 → 总结交付
 ```
 
+bugfix-flow 单次修复的标准产物：
+
+```text
+bugfix-flow/20260728/bugfix-apply-price-precision/
+├── .flow-state.json    # 流程状态，断点恢复依据
+├── fix-plan-v1.md      # 修复方案（含 diff）
+├── errors.log          # 编译错误留痕（失败时追加）
+├── commit-msg.txt      # 统一格式提交信息（问题来源/修改原因/修改说明/测试建议）+ `--- MODIFIED FILES ---` 分隔的改动文件清单
+└── fix-result-v1.md    # 修复结果 + 审查报告
+```
+
 #### 选型逻辑：为什么单 Agent 内联？
 
 小需求/Bug修复粒度小、链路短，拆成多 Agent 反而引入上下文传递损耗与编排复杂度：
@@ -500,11 +510,11 @@ flowchart TB
 
 | # | 机制 | 解决什么问题 |
 |---|------|------------|
-| 1 | 带 diff 的方案 | 修改点必须给出 diff 代码块，纯文字视为无效，杜绝「嘴上改码」 |
+| 1 | 带 diff 的方案 | 修改点必须给出 diff 代码块，与 git diff 效果类似，人工审核代码更直观，杜绝「嘴上改码」 |
 | 2 | 方案即代码审查 | 方案阶段直接给出完整 diff，用户在修复前即可审核代码变更，小粒度场景下审查前置比后置更快更可控 |
 | 3 | 三类人工门禁 | 方案确认 / 编译重试 / 交付确认——用户未表态禁止动一行代码 |
 | 4 | 断点恢复 | 状态实时落盘 .flow-state.json，会话中断后接着上次进度继续 |
-| 5 | 版本化 + reopen | fix-plan-v1/v2/v3 全保留可回溯；交付后发现根本性问题 → attempt+1 回炉重来（≤3 次） |
+| 5 | reopen 机制 | 交付后发现 reopen 回炉重来（≤3 次）；版本控制 fix-plan-v1/v2/v3 全保留可回溯； |
 
 > 口诀：**先给 diff 人工审查再动手，门禁三道把好关，断了能续、错了能回**
 
@@ -529,9 +539,11 @@ flowchart TB
 
 ```mermaid
 flowchart TB
-    U(["/review-flow src/"]) --> MF["review-flow 主Agent<br/>纯调度编排 · temp 0.0<br/>只传参/门禁交互/汇总交付"]
-    MF -->|"步骤1 审查"| R["review-review<br/>多维审查·分级问题清单"]
-    MF -->|"步骤2 修复"| F["review-fix<br/>最小化修复·逐项核验"]
+    U(["/review-flow src/"]) --> MF["主Agent<br/>review-flow 纯调度编排<br/>只传参/门禁交互/汇总交付"]
+    MF -->|"步骤1 审查"| R["SubAgent<br/>review-review 代码审查<br/>多维审查·分级问题清单"]
+    MF -->|"步骤2 修复"| F["SubAgent<br/>review-fix 问题修复<br/>最小化修复·逐项核验"]
+    R -->|"review.md 发现问题"| F
+    F -->|"修复后重新验证 ≤2轮"| R
 
     FS[("报告文件区 $DOC_PATH/<br/>review.md = 审查结果<br/>bugfix.md = 修复记录")]
     R & F <-->|"自行读写报告"| FS
@@ -542,12 +554,12 @@ flowchart TB
 | # | 机制 | 解决什么问题 |
 |---|------|------------|
 | 1 | 主Agent纯调度编排 | review-flow 主 Agent 只做三件事：**传参、门禁交互、汇总交付**，禁止读源码、扫目录、定范围、代执行、解析报告 |
-| 2 | 文件即契约 | SubAgent 间靠 review.md/bugfix.md 报告接力，主流程零改动 |
+| 2 | 文件即契约 | SubAgent 间靠 review.md/bugfix.md 报告接力，协议修改只改对应 SubAgent 定义，主流程零改动；不通过主 Agent 通信，一定程度减少 Token 消耗；过程留痕，可追溯 |
 | 3 | 审查-修复闭环 | 修复→验证→再修复的循环（≤2 次重试），超限自动终止上报 |
 | 4 | 两层重试上限 | 方案确认 ≤5 轮 / 修复重试 ≤2 次，超限一律上报「请人工介入」 |
 | 5 | 断点恢复 | 状态实时落盘 .flow-state.json，会话中断后接着上次进度继续 |
 | 6 | 独立模型配置 | 每个子 Agent 可独立配置`Model`大模型：审查用强模型提高发现率、修复用适度模型平衡成本与质量 |
-| 7 | 温度梯度按角色分配 | review-flow 0.0 调度稳定、review-review 0.4 审查发散、review-fix 0.3 修复灵活 |
+| 7 | 温度梯度按角色分配 | 每个子 Agent 可独立配置温度`temperature`（OpenCode 支持，非所有工具均具备）：`review-flow` 0.0 调度稳定、`review-review` 0.4 审查发散、`review-fix` 0.3 修复灵活 |
 | 8 | 方案确认门禁 + 范围选择门禁 | 双门禁：方案确认（≤5 轮）+ 修复范围选择（按 ID/级别/all/仅报告），用户未表态不动一行代码 |
 | 9 | 问题分级自选修复 | 审查结果按 Critical/Major/Minor/Prompt 分级，用户自主选择修复范围 |
 | 10 | 仅报告模式 | 可以只输出审查报告不修复，适用于"只体检不治病"的场景 |
@@ -567,7 +579,7 @@ flowchart TB
 
 ## 工作流实战案例
 
-以下全部来自各项目仓库中的**真实运行产物**（截至 2026-08-31），非演示数据。
+以下全部来自各项目仓库中的**真实运行产物**（2026-6-中下旬 ~ 2026-08-31），非演示数据。
 
 ---
 
@@ -591,9 +603,9 @@ flowchart TB
 
 ---
 
-### 案例一：`plan + code` Agent 工作模式（XtgSafeAssistant_Qt · 反外挂助手迁移）
+### 案例一：`plan + code` 内置 Agent 工作模式（XtgSafeAssistant_Qt · 反外挂助手迁移）
 
-> **反面教材**：未使用 dev-flow/bugfix-flow 工作流，仅凭 plan + 单 Agent 执行迁移
+> **反面教材**：未使用 dev-flow/bugfix-flow 工作流，仅凭 `plan + code` 内置 Agent 执行迁移
 
 **问题现场**：
 

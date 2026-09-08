@@ -37,7 +37,7 @@ explore 是一个**自由探索模式**：深度思考、问题分析、选项�
 │ 立场驱动       │ 单 Agent 内联     │ 多 Agent 编排         │
 │ 零步骤·零门禁  │ 4 步骤 · 3 类门禁 │ 状态机 · 批次 · 门禁   │
 │ 无必须产物     │ 分钟级            │ 小时级                │
-│ 温度 0.8 发散  │ 温度 0.2~0.3 收敛 │ 主控温度 0.0 机械调度  │
+│ 温度 0.6 发散  │ 温度 0.2~0.3 收敛 │ 主控温度 0.0 机械调度  │
 └───────────────┴──────────────────┴──────────────────────┘
         ▲ 探索"做什么、为什么"          解决"怎么做、做出来"
 ```
@@ -66,7 +66,7 @@ explore 是一个**自由探索模式**：深度思考、问题分析、选项�
 ```mermaid
 flowchart LR
     U(["用户"]) -->|"/explore [主题]"| CMD["commands/explore<br/>转发给 @explore"]
-    CMD --> AG["explore 主 Agent<br/>primary · temp 0.8<br/>立场驱动 · 无固定流程"]
+    CMD --> AG["explore 主 Agent<br/>primary · temp 0.6<br/>立场驱动 · 无固定流程"]
 
     subgraph TOOLS["工具层（宽读取面）"]
         R["read<br/>读代码 / AGENTS.md"]
@@ -115,24 +115,27 @@ flowchart LR
 | 配置项 | 取值 | 说明 |
 |--------|------|------|
 | `mode` | `primary` | 主对话 Agent，直接与用户多轮交互 |
-| `temperature` | `0.8` | 四个 flow 中最高，利于发散思维与头脑风暴（对比 dev-flow 主控 0.0、bugfix-flow 0.3、review-flow 0.2） |
+| `temperature` | `0.6` | 四个 flow 中最高，利于发散思维与头脑风暴（对比 dev-flow 主控 0.0、bugfix-flow 0.3、review-flow 0.2） |
 | `model` | `opencode-go/deepseek-v4-flash` | 轻量快速模型，匹配探索对话高频低风险的特点 |
-| `tools` | read / bash / webfetch / write / task 全开 | 五类工具齐备，支撑"查码 + 调研 + 并行研究" |
-| `permissions.bash` | `"*": "allow"` | git 历史、目录扫描等探测命令免确认 |
-| `permissions.webfetch` | `"*": "allow"` | 外部技术调研免确认 |
-| `permissions.write` | 仅 `"dev-flow/explore/*": "allow"` | **关键安全设计**：写操作收敛到探索笔记单一白名单路径 |
+| `tools` | read / bash / webfetch / task / write 开，`edit` 关 | 探测类工具齐备支撑"查码 + 调研 + 并行研究"；`edit` 显式关闭，杜绝源码改写 |
+| `permission.bash` | `"*": "allow"` | git 历史、目录扫描等探测命令免确认 |
+| `permission.webfetch` | `allow` | 外部技术调研免确认（`webfetch` 仅支持简写值，不支持 glob 对象） |
+| `permission.edit` | `"*": "deny"` + `"dev-flow/explore/*": "ask"` | **关键安全设计**：`edit` 这一把钥匙同时管控 write / edit / apply_patch；全局 deny，仅探索笔记路径 ask |
 
 权限设计的核心是**宽读取、窄写入的漏斗形**：
 
 ```text
 读取面（宽，免确认）                写入面（窄，双保险）
 ┌─────────────────────┐           ┌──────────────────────┐
-│ read  bash *        │  全库可见  │ write ──▶ 提议 → 用户 │
+│ read  bash *        │  全库可见  │ edit ──▶ 提议 → 用户  │
 │ webfetch *  task    │  ───────▶ │ 同意 ──▶ 仅允许写入    │
 └─────────────────────┘           │ dev-flow/explore/*    │
                                   └──────────────────────┘
                                         源代码零写入
 ```
+
+> **注意**：`write` 不是合法的 permission key，`permission.write` 不会生效——写入必须由 `permission.edit` 收敛。
+> `tools` 仅有 `true/false` 两态，无法表达路径级白名单，因此不能替代 `permission.edit` 承担写入收敛职责。
 
 ---
 
