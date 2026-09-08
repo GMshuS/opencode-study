@@ -9,7 +9,10 @@ tools:
   edit: true
   bash: true
 permission:
-  all: ask
+  edit:
+    "*": ask
+    "dev-flow/**": allow
+    "**/dev-flow/**": allow
   bash:
     "*": "allow"
 model: opencode/deepseek-v4-flash-free

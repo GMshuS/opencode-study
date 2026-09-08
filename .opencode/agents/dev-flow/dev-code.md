@@ -10,7 +10,6 @@ tools:
   bash: true
   webfetch: true
 permission:
-  write: allow
   edit: allow
   bash:
     "*": "allow"

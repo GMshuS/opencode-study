@@ -9,8 +9,7 @@ tools:
   edit: false
   bash: true
 permission:
-  all: ask
-  write: allow
+  edit: allow
   bash:
     "*": "allow"
 model: opencode-go/deepseek-v4-flash
