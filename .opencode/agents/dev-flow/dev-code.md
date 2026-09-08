@@ -9,7 +9,7 @@ tools:
   edit: true
   bash: true
   webfetch: true
-permissions:
+permission:
   write: allow
   edit: allow
   bash:

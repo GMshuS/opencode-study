@@ -8,7 +8,7 @@ tools:
   write: true
   edit: true
   bash: true
-permissions:
+permission:
   edit: allow
   bash:
     "*": "allow"

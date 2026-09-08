@@ -9,7 +9,7 @@ tools:
   edit: true
   bash: true
   webfetch: true
-permissions:
+permission:
   bash:
     "*": "allow"
 model: opencode-go/deepseek-v4-flash
