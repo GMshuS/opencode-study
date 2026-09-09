@@ -262,8 +262,8 @@ flowchart LR
 | Skill | `language-detect` | 扫描项目文件自动识别语言，实现`按需动态`加载对应编码规范`xxx-coding-standards` | dev-plan / bugfix-flow / review-flow-review |
 | Skill | `xxx-coding-standards` | 5 种语言的编码规范（C++/Go/JS/Python/SQL）, 可以被`language-detect`主动加载，也可以被`Agent`按Skill规则加载 | dev-code / dev-review / dev-bugfix / bugfix-flow / review-flow-fix |
 | Skill | `build-verify` | 小型工作流：静态检查（如：C/C++的cppcheck/clang-tidy） → 编译验证（最低保障能编译通过） → 结构化报告 | dev-review / dev-bugfix / bugfix-flow / review-flow |
-| Skill | `commit-msg-format` | 三个 flow 共用的 `commit-msg.txt` **统一格式定义**（标题 + 四段式 + `--- MODIFIED FILES ---` 分隔符） | dev-flow / bugfix-flow / review-flow |
-| Command | `/git-autocommit` | 小型工作流：分析变更 -> 生成四段式提交信息 -> 自动Commit -> 用户确认是否push（传入 commit-msg.txt 时按分隔符取提交信息） | **用户手动调用**（flow 交付后提示，人工审核代码后再提交） |
+| Skill | `commit-msg-format` | 三个 flow 共用的 `commit-msg.txt` **统一格式定义**（标题 + 五段式 + `--- MODIFIED FILES ---` 分隔符） | dev-flow / bugfix-flow / review-flow |
+| Command | `/git-autocommit` | 小型工作流：分析变更 -> 生成五段式提交信息 -> 自动Commit -> 用户确认是否push（传入 commit-msg.txt 时按分隔符取提交信息） | **用户手动调用**（flow 交付后提示，人工审核代码后再提交） |
 
 ---
 
@@ -405,7 +405,7 @@ dev-flow/20260709/SmartTradeRescue_HSX/
 ├── code.md              # 编码成果报告
 ├── review.md            # 审查报告（分级问题清单）
 ├── bugfix.md            # 修复记录
-└── commit-msg.txt       # 统一格式提交信息（问题来源/修改原因/修改说明/测试建议）+ `--- MODIFIED FILES ---` 分隔的改动文件清单
+└── commit-msg.txt       # 统一格式提交信息（问题来源/修改原因/修改方案/修改说明/测试建议）+ `--- MODIFIED FILES ---` 分隔的改动文件清单
 ```
 
 #### 关键设计
@@ -489,7 +489,7 @@ bugfix-flow/20260728/bugfix-apply-price-precision/
 ├── .flow-state.json    # 流程状态，断点恢复依据
 ├── fix-plan-v1.md      # 修复方案（含 diff）
 ├── errors.log          # 编译错误留痕（失败时追加）
-├── commit-msg.txt      # 统一格式提交信息（问题来源/修改原因/修改说明/测试建议）+ `--- MODIFIED FILES ---` 分隔的改动文件清单
+├── commit-msg.txt      # 统一格式提交信息（问题来源/修改原因/修改方案/修改说明/测试建议）+ `--- MODIFIED FILES ---` 分隔的改动文件清单
 └── fix-result-v1.md    # 修复结果 + 审查报告
 ```
 

@@ -21,7 +21,7 @@ bugfix-flow 是一个**单 Agent 内联式**的完整 Bug 修复流程，覆盖�
 /bugfix-flow 登录按钮点击后报 500 错误
 ```
 
-Agent 自动创建工作区、产出带 diff 的修复方案、等待用户确认、修改代码、调用构建验证，最终生成可直接交给 `@git-autocommit` 的四段式提交信息。
+Agent 自动创建工作区、产出带 diff 的修复方案、等待用户确认、修改代码、调用构建验证，最终生成可直接交给 `@git-autocommit` 的五段式提交信息。
 
 ### 1.2 与 dev-flow 的定位对比
 
@@ -106,7 +106,7 @@ flowchart LR
 | `.flow-state.json` | 每次状态变化 | 记录 `status`/`problem`/`attempt`，重启后据此恢复 |
 | `fix-plan-v{n}.md` | 步骤 1 | 根因分析、复现流程、**带 diff 的修改点列表**、影响范围 |
 | `errors.log` | 步骤 3 失败时 | 编译错误现场，服务当次重试分析与 reopen 补充分析 |
-| `commit-msg.txt` | 步骤 4 | 调用 `commit-msg-format` skill 生成（问题来源/修改原因/修改说明/测试建议），供 `@git-autocommit` 直接使用 |
+| `commit-msg.txt` | 步骤 4 | 调用 `commit-msg-format` skill 生成（问题来源/修改原因/修改方案/修改说明/测试建议），供 `@git-autocommit` 直接使用 |
 | `fix-result-v{n}.md` | 步骤 4 | 修复状态、修改文件、构建/类型/Linter 三项验证结论 |
 
 > 版本规则：文件名固定携带 `-v{attempt}` 后缀；`attempt == 1` 时屏幕提示不带标记，否则追加 `(第{n}次修复)`。历史版本永久保留，供 reopen 回溯。

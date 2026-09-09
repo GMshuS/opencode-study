@@ -163,7 +163,7 @@ sequenceDiagram
 | `review.md` | review-flow-review（覆盖）<br>review-flow-fix（勾选复选框） | 每轮审查覆盖；修复后更新 | SSOT：问题清单（含修复前后 diff）+ 修复方案 + 验证清单，被 review 与 fix 双向读写 |
 | `bugfix.md` | review-flow-fix | 每轮修复追加 | 修复记录累积：已修复/未修复问题、修改文件、验证结果 |
 | `summary.md` | review-flow | 步骤3 交付时 | 会话概览（范围、问题统计、已修复/未修复、涉及文件）+ 验证结论 |
-| `commit-msg.txt` | review-flow | 有修改的交付时 | 调用 `commit-msg-format` skill 生成统一格式提交信息（问题来源/修改原因/修改说明/测试建议），配合 `/git-autocommit` |
+| `commit-msg.txt` | review-flow | 有修改的交付时 | 调用 `commit-msg-format` skill 生成统一格式提交信息（问题来源/修改原因/修改方案/修改说明/测试建议），配合 `/git-autocommit` |
 
 ### 2.4 配置属性
 

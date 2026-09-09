@@ -179,7 +179,7 @@ sequenceDiagram
 | `review.md` | dev-review | 每轮审查覆盖 | 分级问题清单（C/M/m/P + ID）、验证清单、审查结论 |
 | `bugfix.md` | dev-bugfix | 每轮修复追加 | 根因分析、已修复/未修复问题、修改文件列表 |
 | `skipped_tasks.txt` | dev-flow | 终检发现跳过项时 | 交付时向用户明示哪些任务被放弃及原因 |
-| `commit-msg.txt` | dev-flow | 步骤4 交付时 | 调用 `commit-msg-format` skill 生成统一格式提交信息（需求概述/修改原因/修改说明/测试建议），配合 `/git-autocommit` |
+| `commit-msg.txt` | dev-flow | 步骤4 交付时 | 调用 `commit-msg-format` skill 生成统一格式提交信息（需求概述/修改原因/修改方案/修改说明/测试建议），配合 `/git-autocommit` |
 
 ### 2.4 配置属性
 
