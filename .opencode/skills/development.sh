@@ -37,6 +37,10 @@ for DEST in "${TARGET_DIRS[@]}"; do
         
         FOLDER_NAME=$(basename "$SOURCE_FOLDER")
         echo "Copying: $FOLDER_NAME"
+        # Remove existing destination to prevent nested directory creation
+        if [ -d "$DEST/$FOLDER_NAME" ]; then
+            rm -rf "$DEST/$FOLDER_NAME"
+        fi
         cp -r "$SOURCE_FOLDER" "$DEST/$FOLDER_NAME"
         if [ $? -ne 0 ]; then
             echo "WARNING: Failed to copy $FOLDER_NAME"
