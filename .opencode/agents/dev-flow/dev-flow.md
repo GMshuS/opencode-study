@@ -83,7 +83,7 @@ dev-flow 与子 agent 之间通过文件通信，不再通过上下文模板传�
 
 在进入编码前，将 dev-plan 的产出摘要展示给用户确认：
 
-1. 展示 dev-plan 返回摘要中的关键字段（计划状态/批次数/任务总数/依赖深度/技术选型/编码规范/关键风险）
+1. 展示 dev-plan 返回摘要中的关键字段（计划状态/批次数/任务总数/拓扑层数/技术选型/编码规范/关键风险）
 2. 提示用户：「以上为计划摘要，完整方案详见 `$DOC_PATH/plan.md`。是否确认？如需调整请说明」
 
 3. 根据用户反馈：
@@ -129,9 +129,14 @@ dev-flow 与子 agent 之间通过文件通信，不再通过上下文模板传�
    - dev-review 自行读取 `code.md` + `plan.md`，自行写入 `$DOC_PATH/review.md`
    - 更新状态文件 `status: "reviewed"`
 
-2. **判断审查结论**：从 `$DOC_PATH/review.md` 提取「审查结论」字段值
-   - **若判定为通过** → 进入步骤4（交付）
-   - **若不通过**：
+2. **判断审查结论**：从 `$DOC_PATH/review.md` 提取「审查结论」字段值（三态：`通过` / `不通过` / `无法判定（环境阻断）`）
+   - **若为通过** → 进入步骤4（交付）
+   - **若为无法判定（环境阻断）** → **终止并上报人工**（不进修复循环）：
+     - 更新状态文件 `status: "blocked"`
+     - 从 review.md 提取「环境阻断原因」与「建议动作」字段原文，上报：
+       「验证环境不可用：<环境阻断原因>。请人工处理：<建议动作>；处理完成后清理 `$DOC_PATH/` 重新执行 dev-flow」
+     - **不调用 @dev-bugfix、不消耗 iteration** —— 代码没有问题，改代码无意义且可能引入新问题
+   - **若为不通过**：
      a. 从 `$DOC_PATH/.flow-state.json` 读取 `iteration` 值
      b. 若 **iteration > 3** → **上报后终止**：
         - 更新状态文件 `status: "failed"`
@@ -154,7 +159,12 @@ dev-flow 与子 agent 之间通过文件通信，不再通过上下文模板传�
    - 改动文件清单：从 `code.md`「涉及文件」行 + `bugfix.md`「修改文件列表」段机械提取，合并去重
    - 提示用户可通过 `/git/git-autocommit $DOC_PATH/commit-msg.txt` 提交
 
-2. **完成交付**
+2. **遗留项提示**：从 `$DOC_PATH/review.md` 提取「遗留项」字段
+   - 若值非「无」→ 在交付汇总中提示：「⚠️ 存在 Minor / Potential 遗留项：<字段原文>，
+     未阻断交付，建议单独处理，详见 `$DOC_PATH/review.md`」
+   - 若为「无」→ 跳过
+
+3. **完成交付**
    - 以原子方式更新状态文件 `status: "delivered"`
    - 汇总交付最终成果
 
@@ -169,6 +179,7 @@ dev-flow 与子 agent 之间通过文件通信，不再通过上下文模板传�
   计划用户终止 → status: "cancelled"
   dev-code 完成 → status: "coded"
   dev-review 完成 → status: "reviewed"
+  dev-review 环境阻断 → status: "blocked"（终止，上报人工，不消耗 iteration）
   dev-bugfix 完成 → status: "bugfixed" (iteration+1)
   交付完成 → status: "delivered"
   超限终止 → status: "failed"

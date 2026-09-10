@@ -27,30 +27,34 @@ enabledAutoRun: true
 2. 仅编写计划内的代码，不随意添加未规划的功能
 3. 按加载的编码规范书写代码
 4. 生成前先 `read` 目标文件及相邻文件，理解现有代码风格
-5. 每完成一个文件，记录完整路径
-6. **每完成一批 Level 任务后，必须立即**更新 `$DOC_PATH/plan.md`：
+5. **依赖声明（禁止安装）**：引入第三方库时，同步更新依赖清单文件（`package.json` / `requirements.txt` /
+   `pyproject.toml` / `go.mod` / `CMakeLists.txt` 的 `find_package` / `.pro` 的 `QT +=` 等）
+   - **禁止执行任何安装命令**（`npm install` / `pip install` / `go mod download` 等）——
+     安装是构建前置动作，**不属本 agent 职责**
+   - 漏声明会导致后续构建阶段无从得知要安装什么，依赖永远装不上
+6. 每完成一个文件，记录完整路径
+7. **每完成一批 Level 任务后，必须立即**更新 `$DOC_PATH/plan.md`：
    - 按任务名精确匹配，将 `- [ ] 任务X` 替换为 `- [x] 任务X`
    - **只修改复选框，保留任务名原文不变**（不要改写任务名以保证可被 grep 机械匹配）
    - 若本批某个任务部分完成或跳过，**不要勾选**，并在成果报告的「任务完成度」段说明
    - 示例：`- [ ] 任务A-1（优先级:高 耗时:2h 依赖:无）` → `- [x] 任务A-1（优先级:高 耗时:2h 依赖:无）`
 
-> 注：本步骤的语法自检仅做快速语法验证，不替代后续 @dev-review 的完整构建和测试。
+> 注：本步骤的语法自检仅做快速语法验证，不能替代完整构建与测试。
 
 ## 步骤3：代码自检
 每编写完一个文件/模块后，立即执行语法/编译检查：
 - **JS/TS**: `node --check <file>` 或 `npx tsc --noEmit`
 - **Python**: `python -m py_compile <file>` 或 `python3 -m py_compile <file>`
 - **Go**: `go vet` 或 `go build -o /dev/null ./...`
-- **Rust**: `cargo check`
 - **C/C++**: `gcc -fsyntax-only <file>` / `clang -fsyntax-only <file>` 或 `msbuild /t:build`
 
 自检失败则直接修复后再继续，不自检通过不交付。
 
-## 步骤4：依赖管理（按需）
-- 如计划中指定了新依赖，执行安装命令（`npm install xxx` / `pip install xxx` 等）
-- 记录已安装的依赖
+> - 若自检**因第三方依赖未安装而无法执行**（如 `node_modules` 缺失导致 `npx tsc` 报错）→ **不视为编码失败**，
+>   记录到 `code.md`「待补充内容」并继续，不阻塞
+> - 本步骤**只做语法级自检**：不做完整构建、不做全量 Linter、不执行测试
 
-## 步骤5：更新编码成果报告
+## 步骤4：更新编码成果报告
 
 将本批编写成果报告写入 `$DOC_PATH/code.md`：
 - 若 code.md 不存在（第一批）→ 创建写入
@@ -70,7 +74,7 @@ enabledAutoRun: true
       涉及文件：文件A，文件B
    - 功能2：[功能名]
       涉及文件：文件C
-3. 新增依赖（如无则省略此项）：
+3. 新增依赖声明（如无则省略此项）：
    - 依赖名 @版本号
 4. 待补充内容：
    - 无 / 待实现内容
