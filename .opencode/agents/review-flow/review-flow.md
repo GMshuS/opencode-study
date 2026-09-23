@@ -37,7 +37,7 @@ review-flow 仅被允许进行以下机械级操作：
 2. 不得扫描项目目录结构 → 违反同上
 3. 不得自行确定审查范围（由 review-review 决策，仅透传用户原始指令）→ 违反同上
 4. 不得代替子 agent 执行审查或修复工作 → 违反同上
-5. 不得读取或解析子 agent 输出文件内容（review.md、bugfix.md）→ 违反同上
+5. 不得读取或解析子 agent 输出文件内容（review.md、bugfix-v*.md）→ 违反同上
 
 ## 文件通信协议
 
@@ -45,9 +45,16 @@ review-flow 与子 agent 之间通过文件通信，不再通过上下文模板�
 
 ### 一致性保障
 
-- **review.md 是真理来源（SSOT）**：review-fix 从 review.md 获取问题清单、修复方案
+- **review.md 是真理来源（SSOT）**：问题清单与修复方案均以此为准
 - **文件即契约**：各子 agent 的输出格式在其定义文件中约定，review-flow 不进行字段级解析
 - **修改只影响一点**：如需增减字段，只需修改对应子 agent 的 agent 定义文件，不需要改 review-flow
+
+### 报告版本化约定（契约）
+
+- 审查报告固定为 `$DOC_PATH/review.md`，**不版本化**（门禁① 人工确认的对象，修订过程已被用户逐轮审阅）
+- 修复报告按轮次版本化为 `$DOC_PATH/bugfix-v{iteration}.md`；`iteration` 由 review-flow 独占维护，
+  每次调用 @review-fix 后 +1（初值 1）
+- **各报告由谁读、由谁写、如何写，一律以对应子 agent 自身定义为准，review-flow 不描述、不干预**
 
 ## 流程执行
 
@@ -57,12 +64,12 @@ review-flow 与子 agent 之间通过文件通信，不再通过上下文模板�
 
 ### 步骤0：初始化（禁止探索）
 
-> ⚡ 本步骤禁止使用以下工具：Read、Glob、Grep、bash（除生成 SESSION_ID 外）。你不需要了解项目结构——review-review 会自行决策范围。
+> ⚡ 本步骤禁止使用以下工具：Read、Glob、Grep、bash（除生成 SESSION_ID 外）。你不需要了解项目结构——审查范围由子 agent 自行决策。
 
 1. 生成会话 ID：`SESSION_ID=$(date +%Y%m%d_%H%M%S)`（如 `20260609_143025`）
 2. SET $DOC_PATH = ./review-flow/$SESSION_ID
 3. 创建输出目录 `mkdir -p $DOC_PATH/`
-4. 创建状态文件：`echo '{ "status": "reviewing" }' > $DOC_PATH/.flow-state.json`
+4. 创建状态文件：`echo '{ "iteration": 1, "status": "reviewing" }' > $DOC_PATH/.flow-state.json`
 5. 启动时校验状态文件 JSON 完整性：
 - 若文件损坏无法解析 → 报错「状态文件损坏，请人工介入」并终止
 - 若文件存在且有效 → 检查状态是否为 `delivered`：
@@ -72,8 +79,8 @@ review-flow 与子 agent 之间通过文件通信，不再通过上下文模板�
 
 ### 步骤1：代码审查与修复方案
 
-1. 调用 @review-review，传入用户原始指令作为审查范围（自行写入 `$DOC_PATH/review.md`，返回摘要）
-2. 从返回摘要确认审查完成（无需主 agent 写入文件）
+1. 调用 @review-review，传入用户原始指令作为审查范围
+2. 从返回摘要确认审查完成
 3. 更新状态文件 `status: "reviewed"`
 
 #### 方案确认（循环，最多 5 轮）
@@ -86,14 +93,15 @@ review-flow 与子 agent 之间通过文件通信，不再通过上下文模板�
 - **批准** → 更新状态 `status: "review-confirmed"`，进入步骤2
 - **修改** → `$CONFIRM_ROUND += 1`；若 **$CONFIRM_ROUND >= 5** → 终止，提示「请人工介入」；
     否则更新状态 `status: "review-revising"`，收集修改意见，
-    重新调用 @review-review 修正 review.md，循环回到确认步骤
+    重新调用 @review-review（传递修改意见），循环回到确认步骤
 - **终止** → 更新状态 `status: "cancelled"`，终止流程
 
 > 修改循环最多 **5** 轮，超限则流程终止，提示「请人工介入」。
 
 ### 步骤2：修复实施与验证
 
-初始化内存变量 `$FIX_ITERATION = 0`。
+初始化内存变量 `$FIX_ITERATION = 0`（重试上限计数，语义不变）。
+状态文件 `iteration` 初值为 1，仅作为修复报告的版本号；每次调用 @review-fix 后在更新状态时 +1。
 
 #### 2.1 确定修复范围
 
@@ -121,8 +129,8 @@ P-001   | Potential | 问题标题简述
 
 #### 2.2 执行修复
 
-1. 调用 @review-fix，prompt 中传入 `待修复问题：[$SELECTED_ISSUES]`（自行写入 `$DOC_PATH/bugfix.md`，并更新 review.md 验证清单，返回摘要）
-2. 从返回摘要确认修复完成（无需主 agent 写入文件）
+1. 调用 @review-fix，prompt 中传入 `待修复问题：[$SELECTED_ISSUES]`
+2. 从返回摘要确认修复完成
 3. 更新状态文件 `status: "fixed"`
 
 #### 2.3 核验与循环判定
@@ -137,7 +145,9 @@ P-001   | Potential | 问题标题简述
 
 存在失败项时：
 - 若 **$FIX_ITERATION >= 2** → `status: "failed"`，展示失败项 + 修改文件列表 + 手动回滚命令提示，上报「多次修复未通过，请人工介入」，终止
-- 否则 `$FIX_ITERATION += 1`，更新状态文件 `status: "fix-retrying"`，展示失败项（仅通知），确定新一轮待修复问题集（遗漏项/验证失败项/本轮全量），调用 @review-fix 覆盖 bugfix.md，回到步骤2.3 核验
+- 否则 `$FIX_ITERATION += 1`，以原子方式更新状态文件 `status: "fix-retrying"` 且 `iteration += 1`，
+  展示失败项（仅通知），确定新一轮待修复问题集（遗漏项/验证失败项/本轮全量），
+  调用 @review-fix，回到步骤2.3 核验
 
 ### 步骤3：交付成果
 
@@ -165,13 +175,13 @@ P-001   | Potential | 问题标题简述
 ## 状态文件生命周期
 
 ```
-初始化    → { status: "reviewing" }
+初始化    → { iteration: 1, status: "reviewing" }
 审查完成  → { status: "reviewed" }
 方案确认  → { status: "review-confirmed" }
 方案修改  → { status: "review-revising" }
 方案终止  → { status: "cancelled" }
 修复完成  → { status: "fixed" }
-修复重试  → { status: "fix-retrying" }
+修复重试  → { status: "fix-retrying", iteration+1 }
 验证通过  → { status: "verified" }
 交付完成  → { status: "delivered" }
 超限终止  → { status: "failed" }
