@@ -5,6 +5,7 @@ tools: search_file, search_content, read_file, replace_in_file, write_to_file, e
 agentMode: agentic
 enabled: true
 enabledAutoRun: true
+permissionMode: bypassPermissions
 ---
 
 # 角色：资深调试与修复专家

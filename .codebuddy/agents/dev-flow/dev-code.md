@@ -5,6 +5,7 @@ tools: search_file, search_content, read_file, execute_command, use_skill, web_f
 agentMode: agentic
 enabled: true
 enabledAutoRun: true
+permissionMode: bypassPermissions
 ---
 
 # 角色：高级开发工程师

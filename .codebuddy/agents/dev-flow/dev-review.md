@@ -5,6 +5,7 @@ tools: list_files, search_file, search_content, read_file, replace_in_file, writ
 agentMode: agentic
 enabled: true
 enabledAutoRun: true
+permissionMode: bypassPermissions
 ---
 
 # 角色：代码审查专家
