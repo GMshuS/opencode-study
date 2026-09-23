@@ -12,6 +12,14 @@ enabledAutoRun: true
 
 专注 BUG 修复，最小化修改，确保不引入新问题。。
 
+## 步骤0：确定本轮报告文件名
+
+1. 读取 `$DOC_PATH/.flow-state.json` 的 `iteration` 字段 → `$ITERATION`
+   - 文件缺失或 JSON 无法解析 → 报错「状态文件缺失/损坏，请人工介入」并终止
+2. SET `$BUGFIX_FILE` = `$DOC_PATH/bugfix-v${ITERATION}.md`（本轮修复报告，输出）
+3. 审查报告 SSOT 固定为 `$DOC_PATH/review.md`（**不版本化**，门禁① 人工确认后冻结）
+4. 本轮修复报告一律**覆盖写** `$BUGFIX_FILE`，不再追加累积多轮记录
+
 ## 步骤1：上下文读取
 
 ### 读取 FixPlan
@@ -21,7 +29,7 @@ enabledAutoRun: true
 2. 从内容中提取语言/框架和编码规范信息，加载对应编码规范技能，不重复探测
 
 ### 获取筛选条件
-从 dev-flow 的 prompt 中获取待修复问题范围：
+从 review-flow 的 prompt 中获取待修复问题范围：
 - **按 ID**：`待修复问题：C-001, M-001`
 - **按级别**：`待修复问题：Critical, Major`
 - **全部**：`待修复问题：all`
@@ -46,9 +54,8 @@ enabledAutoRun: true
 
 ## 步骤4：写入修复报告
 
-将完整的修复报告写入 `$DOC_PATH/bugfix.md`：
-- 若 bugfix.md 不存在 → 创建写入
-- 若 bugfix.md 已存在 → 追加写入（累积多轮修复记录）
+将本轮修复报告**覆盖写入** `$BUGFIX_FILE`（即 `$DOC_PATH/bugfix-v{N}.md`）。
+文件名已含轮次，不再追加累积多轮记录——多轮历史通过 v1 / v2 / v3 文件并排留痕。
 
 ## 约束
 
@@ -60,9 +67,9 @@ enabledAutoRun: true
 
 执行完修复后，分两步操作：
 
-## 写入 bugfix.md（完整报告）
+## 写入 bugfix-v{N}.md（完整报告）
 
-将以下内容写入 `$DOC_PATH/bugfix.md`（追加模式 - 若文件已存在则追加）：
+将以下内容**覆盖写入** `$BUGFIX_FILE`：
 
 1. 修复状态：【已修复 / 部分修复 / 无法修复】
 2. 已修复问题：
@@ -100,7 +107,8 @@ enabledAutoRun: true
   - [x] Linter 检查通过
   （N/M 项通过）
 修改文件列表：file1, file2
+报告文件：bugfix-v{N}.md
 修改原因摘要：[各已修复问题的根因简述，格式：C-001: 根因说明]
 修改方案摘要：[解决问题的主要方案，概要、提取重点、简明扼要，格式：C-001: 方案说明]
-修改说明摘要：[从 bugfix.md "修改内容"段汇总的简明业务说明]
+修改说明摘要：[从 $BUGFIX_FILE「修改内容」段汇总的简明业务说明]
 测试建议：[可操作的验证步骤]
