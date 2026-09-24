@@ -40,29 +40,31 @@ permissionMode: bypassPermissions
 
 ## 步骤2.5：测试框架判定
 
-判定问题只有一个：**本项目当前是否已有可直接运行的测试框架？**
+判定问题只有一个：**能否在本轮让测试跑起来？**（存量项目未配置测试，但本地环境支持时应主动配置，而非放弃）
 
 | 档位 | 判据 | 本步输出 |
 |---|---|---|
-| **有框架** | 项目已配置测试框架且命令可直接执行；**或建议框架安装成功** | 在 plan.md 记录框架与运行命令 |
-| **无框架** | 未配置测试框架，且**建议框架安装失败**（或不适用包管理器安装） | 在 plan.md 记录建议框架、安装指导与**失败原始输出** |
+| **有框架** | 项目已配置测试框架且命令可直接执行；**或本地环境支持，经安装依赖 / 补充项目配置即可使测试跑起来** | 在 plan.md 记录框架与运行命令、**待配置项** |
+| **无框架** | 本地环境不支持（依赖装不上、工具链缺失、离线且无自带方案） | 在 plan.md 记录建议框架、安装指导与**失败原始输出** |
 
 **尝试安装**（仅建议框架可通过项目已有包管理器安装时执行，如 `npm i -D vitest` / `pip install pytest`）：
 
 - 安装成功 → 档位 = 有框架，plan.md 记录框架与命令
 - 安装失败 → 档位 = 无框架，plan.md 记录建议框架 + 安装指导 + **失败原始输出**，不再重试
-- C++ 等不适用包管理器安装的场景不尝试（VS 模板 / FetchContent 由编码阶段引入）
 
-### 选型与安装指导（无框架时填写）
+> 包管理器之外的场景（VS 模板 / FetchContent / `.pro` 配置）不在此处安装，其项目侧配置动作须记入 plan.md「待配置项」，由编码阶段完成。
+> 本步判定的是**可行性**（环境支持、引入动作可执行），配置正确性由审查阶段校验。
 
-| 语言 / 场景 | 建议框架 | 何时算「已有」 | 安装指导 |
+### 选型与启用动作
+
+| 语言 / 场景 | 建议框架 | 可否本轮启用（判据） | 启用动作（引入 + 项目侧配置） |
 |---|---|---|---|
-| Go | 标准库 `testing` | 有 `go.mod` 即已有（stdlib，无需安装） | 无需安装，`go test ./...` 开箱可用 |
-| TS / JS | 沿用既有配置（jest / vitest / mocha）；**无配置时 vitest** | `package.json` 有 `scripts.test` 且 `node_modules` 已安装 | `npm i -D vitest` |
-| Python | pytest | `pytest.ini` / `pyproject.toml` 已配置，且 `python -c "import pytest"` 成功 | `pip install pytest` |
-| C++ · Qt | `QtTest` | `.pro` 含 `QT += testlib` | 在 `.pro` 增加一行 `QT += testlib` |
-| C++ · CMake | GoogleTest（或单文件 doctest） | `CMakeLists.txt` 含 `enable_testing()` + `add_test` | `find_package(GTest)`，或 FetchContent，或单文件引入 `doctest.h` |
-| C++ · MSVC（.sln/.vcxproj，非 CMake） | GoogleTest（VS「Google Test」项目模板自带库副本） | 解决方案已含测试项目（Google Test / 本机单元测试项目） | VS 新建「Google Test」项目即可；**离线 / NuGet 还原失败时改用 VS 自带「本机单元测试项目」（CppUnitTest，零网络依赖）**；手动配置 GTest 须与被测工程运行库一致（`/MD` vs `/MT`），否则 LNK2038 |
+| Go | 标准库 `testing` | 项目有 `go.mod` 且 `go` 可用 | 无需引入；直接写 `*_test.go`，`go test ./...` 开箱可用 |
+| TS / JS | 沿用既有配置（jest / vitest / mocha）；**无配置时 vitest** | `package.json` 存在且 npm 可用 | `npm i -D vitest`；在 `package.json` 增加 `scripts.test` |
+| Python | pytest | `python -c "import pytest"` 成功，或 pip 可用 | `pip install pytest`；按需增加 `pytest.ini` / `pyproject.toml` 配置 |
+| C++ · Qt | `QtTest` | Qt 安装含 testlib 模块（`QtTest` 头文件存在） | 在 `.pro` 增加 `QT += testlib` 与测试目标，并新增测试源文件 |
+| C++ · CMake | GoogleTest（或单文件 doctest） | `find_package(GTest)` 可解析，或可 FetchContent，或可单文件引入 | 在 `CMakeLists.txt` 增加 `enable_testing()` + `add_test`，并接入 GTest 或引入 `doctest.h` |
+| C++ · MSVC（.sln/.vcxproj） | GoogleTest（VS「Google Test」项目模板自带库副本） | VS 可新建测试项目且 NuGet 可还原 | 新建「Google Test」测试项目；**离线 / 还原失败时改用 VS 自带「本机单元测试项目」（CppUnitTest，零网络依赖）**。GTest 运行库须与被测工程一致（`/MD` vs `/MT`），否则 LNK2038；走模板时须选对 NuGet 包变体（rt-dyn / rt-static） |
 
 > 探测时**避免隐式下载**：用 `npx --no-install vitest --version`，
 > 而非 `npx vitest --version`（后者会触发下载并可能挂起）。
@@ -178,6 +180,7 @@ permissionMode: bypassPermissions
    - 档位：【有框架 / 无框架】
    - 框架与命令：【如 `go test ./...` / `npx --no-install vitest run`】（无框架时填"不适用"）
    - 测试文件位置约定：【如 `**/*_test.go` / `tests/*.test.ts`】
+   - 待配置项：【无 / 如「`package.json` 增加 `scripts.test`」/「`CMakeLists.txt` 增加 `enable_testing()` + `add_test`」/「`.pro` 增加 `QT += testlib`」/「新建 Google Test 测试项目」】
    - 建议框架 + 安装指导（**仅无框架时填写**）：
        建议框架：【如 vitest】
        安装命令：【如 `npm i -D vitest`】

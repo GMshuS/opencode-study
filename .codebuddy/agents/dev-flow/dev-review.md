@@ -100,6 +100,9 @@ permissionMode: bypassPermissions
    > 1. 存在 **Critical / Major**（来自代码审查，或来自 build-verify 且按「环境阻断判定」判为代码原因）→ **不通过**
    > 1.5 **测试门禁**：
    >     - 档位 = 有框架 → 必须调用 `test-verify`；结论为 `❌ N 项失败` / `❌ 超时` → **不通过（Critical）**
+   >     - 档位 = 有框架 且 `⏭️ 阻断` → 规划已判定本轮可跑，跑不起来即未达成：
+   >       先确认 `build-verify` 是否环境阻断——是则走判定第 2 条；
+   >       否则判为**配置问题 → Critical**（多为「待配置项」未落实，如缺 `enable_testing()` / `QT += testlib` / `scripts.test`）
    >     - 档位 = 无框架 → **不调用 `test-verify`**；不得勾选「单元测试通过」，须注明「不适用 — 无测试框架」
    > 2. 否则，若 `build-verify` 因**环境阻断**导致验证未执行 → **无法判定（环境阻断）**
    > 3. 否则 → **通过**
