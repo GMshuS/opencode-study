@@ -15,7 +15,6 @@ permission:
     "**/dev-flow/**": allow
   bash:
     "*": "allow"
-model: opencode/deepseek-v4-flash-free
 ---
 
 # 角色：代码审查专家

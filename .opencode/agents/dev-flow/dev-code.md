@@ -13,7 +13,6 @@ permission:
   edit: allow
   bash:
     "*": "allow"
-model: opencode/deepseek-v4-flash-free
 ---
 
 # 角色：高级开发工程师

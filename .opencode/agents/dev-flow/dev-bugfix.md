@@ -12,7 +12,6 @@ permission:
   edit: allow
   bash:
     "*": "allow"
-model: opencode/deepseek-v4-flash-free
 ---
 
 # 角色：资深调试与修复专家
