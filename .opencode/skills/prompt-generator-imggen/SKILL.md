@@ -1,36 +1,19 @@
 ---
 name: prompt-generator-imggen
-description: 当用户要求生成图片的提示词时调用，解析用户的文生图需求，按照固定结构组装**正向提示词（中文 + 英文）、负面提示词（中文 + 英文）、推荐模型、参数建议**
+description: 当用户要求生成图片提示词、优化提示词，或描述画面要求输出中英文正负提示词与推荐模型时调用。按固定结构拆解需求，输出单一 Markdown 结果，覆盖 Z-Image-Turbo、FLUX.2-klein、Krea2 Turbo、MOSS-Image SFT、qwen-image-2.1
 ---
 
-## 1. 技能描述
-你是专业的文生图提示词编排Agent。接收用户自然语言描述/零散提示词，自动拆解为标准结构：
-`主体 → 动作姿态 → 环境背景 → 光线 → 镜头参数 → 材质 → 画风 → 画质细节`
-自动匹配专业关键词，输出**中英双语正向提示词**；根据画面类型（人像/产品/线稿三视图/国风/氛围动态）自动选择配套负面词；结合需求特征自动推荐最优模型，附带简短理由与生成参数建议。
+## 1. 技能定位
+把用户自然语言拆成 8 段结构，输出中英双语正负提示词，并推荐模型与参数。仅处理单图的文生图、图生图、蒙版重绘；多视图 / 三视图 / 设定表类需求不适用。
 
-> 支持三种模式识别：
-> 1. `txt2img` 文生图（默认）
-> 2. `img2img` 图生图（用户提到参考图、保留构图、保留原图）
-> 3. `inpaint` 蒙版局部重绘（用户提到蒙版、局部修改、只改指定区域）
+## 2. 解析流程
 
-## 2. 触发条件
-用户输入包含以下任意意图，激活本Skill：
-- 用户想要生成AI绘画提示词、优化提示词、整理提示词
-- 用户描述画面，要求输出中英文正负提示词、推荐模型
-- 用户提到：文生图、图生图、蒙版、局部重绘、inpaint、参考图
-- 用户使用z-image / flux2 / krea2 / qwen-image-2.1 相关生图需求
+### 2.1 模式识别（按顺序判定，命中即定）
+1. 含「蒙版 / 局部修改 / 只改这块」→ `inpaint`
+2. 含「参考图 / 保留原图 / 保持构图不变 / img2img」→ `img2img`
+3. 其它 → `txt2img`
 
-> 不触发：用户只问模型原理、不要求组装提示词；用户问视频、3D代码等无关任务。
-
-## 3. 输入解析规则（Agent执行逻辑）
-### 3.1 第一步：识别任务类型
-优先识别标记：
-- 关键词：蒙版 / 局部修改 / 只改这块 → `inpaint`
-- 关键词：参考图 / 保留原图 / 保持构图不变 / img2img → `img2img`
-- 无上述关键词 → 默认 `txt2img`
-
-### 3.2 第二步：拆解用户描述到8个字段
-固定字段：
+### 2.2 拆解字段
 1. subject 主体
 2. pose_action 动作姿态
 3. environment 环境背景
@@ -40,69 +23,54 @@ description: 当用户要求生成图片的提示词时调用，解析用户的�
 7. style 画风
 8. quality 画质细节
 
-> 规则：
-> - 用户缺失的字段，自动从专业词库补充适配词，不要强行堆砌；只补充**贴合需求**的词
-> - 用户明确不想要的元素，移入负面词
-> - inpaint模式：正向提示词开头强制增加全局锁定语句（保留原图约束）
-> - img2img模式：正向提示词开头增加构图锁定语句
+> - 顺序不可打乱；用户未提及的字段填「—」，不为凑格式硬加词
+> - 用户明确不要的元素移入负面词
+> - 仅 MOSS-Image SFT 的版式场景额外产出 `layout`（画布比例 + 元素表格：内容 / bbox / 样式），其它模型不输出
 
-### 3.3 第三步：模型自动推荐逻辑（核心判定）
-| 用户需求特征 | 优先推荐模型 | 理由 |
+### 2.3 模型推荐
+
+| 需求特征 | 推荐模型 | 理由 |
 |---|---|---|
-| 写实人像、商业写真、原生肤质、中文人像 | z-image | 中文人像理解强，写实质感自然，适合人像摄影 |
-| 复杂构图、产品渲染、三视图线稿、多物体、工业设定、建筑原画 | flux2 | 构图逻辑稳定，长提示词承载力强，中英都稳 |
-| 电影氛围、动态、发丝飘动、水雾黄昏、逆光、胶片质感、动态光影 | krea2 | 光影、动态、氛围感表现突出，适合情绪向画面 |
-| 国风、水墨工笔、中文叙事、自然语言编辑、海报、诗意画面 | qwen-image-2.1 | 中文语义理解极强，国风表现力优秀，适合自然指令编辑 |
+| 写实人像、商业写真、原生肤质、中文人像、快速草稿、单行中英文短文字 | Z-Image-Turbo | 8 步出图，写实质感自然、短文字准确 |
+| 复杂构图、产品渲染、三视图线稿、多物体、工业设定、建筑原画、参考图语义编辑 | FLUX.2-klein | 构图稳定，长提示词承载力强，原生支持参考图编辑 |
+| 电影氛围、动态、发丝飘动、水雾黄昏、逆光、胶片质感、情绪向审美 | Krea2 Turbo | 光影与氛围表现突出，成片风格强 |
+| 成段文案、海报版式、信息图、UI 稿、多语言文字、bbox 精确布局、超长提示词 | MOSS-Image SFT | 布局可控，支持约 4K token，文字与排版分组最优 |
+| 国风、水墨工笔、中文叙事、自然语言编辑、诗意画面 | qwen-image-2.1 | 中文语义理解强，国风表现力优秀 |
 
-> 兜底：如果需求混合，给出【首选 + 备选模型】
+冲突消解（按顺序判定，命中即定）：
+1. 成段文字 / 多行排版 / 版式位置可控 → MOSS-Image SFT
+2. 参考图 / 保留原图 / 物体替换或移除 → FLUX.2-klein；`inpaint` 只能给它
+3. 氛围光影 vs 写实人像 → 人像为主体取 Z-Image-Turbo，氛围为主体取 Krea2 Turbo；国风 vs 复杂构图 → qwen-image-2.1 首选、FLUX.2-klein 备选
+4. 跨 2 类以上 → 输出首选 + 备选，理由写明取舍
 
-### 3.4 第四步：负面词匹配规则
-自动识别画面品类，加载对应负面词包：
-- 人像 → 人像写真负面包
-- 产品静物 → 商业产品渲染负面包
-- 三视图/线稿 → 线稿正交图负面包
-- 国风水墨 → 国风专属负面包
-- 氛围电影图 → krea氛围精简负面包
-- 通用场景 → 通用精简负面包
+### 2.4 负面词包（直接取用，不自行发明）
 
-> 约束：Krea2负面词不要过长；Z-Image优先中文负面；Flux2/Qwen支持较长负面词。
+| 品类 | 中文 | English |
+|---|---|---|
+| 人像写真 | 五官扭曲，多余手指，肢体畸形，过度磨皮，眼神空洞，比例失调，塑料皮肤 | distorted facial features, extra fingers, deformed limbs, over-smoothed skin, dead eyes, bad proportions, plastic skin |
+| 商业产品渲染 | 形变，结构错误，多余部件，反光杂乱，阴影脏，文字，水印 | deformed shape, wrong structure, extra parts, messy reflections, dirty shadows, text, watermark |
+| 线稿正交图 | 透视，分栏错位，画面融合，线条毛躁，多余结构，比例不一致 | perspective, misaligned panels, merged panels, messy lines, extra structure, inconsistent proportions |
+| 国风水墨 | 西式画风，油画笔触，色彩艳俗，五官西化，构图杂乱，现代元素 | western style, oil brushstrokes, garish colors, westernized faces, cluttered composition, modern elements |
+| Krea2 Turbo 氛围（≤6） | 五官崩坏，肢体畸形，色彩断层，过曝，死黑，文字水印 | broken face, deformed limbs, color banding, blown highlights, crushed blacks, text watermark |
+| MOSS 版式文字 | 乱码文字，错字，缺字，字体重叠，文字溢出画面，版式错位，层级混乱 | garbled text, misspelled text, missing characters, overlapping text, text overflow, misaligned layout, broken hierarchy |
+| 通用精简 | 畸变，模糊，噪点，文字，水印，低质量 | distortion, blurry, noise, text, watermark, low quality |
 
-## 4. 输出格式（固定JSON + 可读Markdown双输出，Agent标准返回）
-> Agent必须同时输出两部分：
-> ① 结构化JSON（方便上游程序解析）
-> ② 友好Markdown（给人类阅读、直接复制提示词）
+按模型决定是否输出负面词：FLUX.2-klein 与 MOSS-Image SFT 输出完整负面；Z-Image-Turbo 与 Krea2 Turbo 在 CFG≈1 时负面词无效，排除项改写为正向「仅包含 Y」，仅 CFG>1.2 时输出 ≤6 项；qwen-image-2.1 以管线为准，不支持时并入正向限定。
 
-### JSON Schema
-```json
-{
-  "task_type": "txt2img | img2img | inpaint",
-  "recommend_model": "首选模型",
-  "alternative_model": "备选模型，无则空字符串",
-  "reason": "选择模型的简短理由",
-  "positive_cn": "中文正向提示词",
-  "positive_en": "English positive prompt",
-  "negative_cn": "中文负面提示词",
-  "negative_en": "English negative prompt",
-  "param_suggest": {
-    "denoising_strength": "仅img2img/inpaint生效，txt2img填null",
-    "cfg_scale": "推荐CFG",
-    "steps": "推荐采样步数"
-  },
-  "disassembly": {
-    "subject": "",
-    "pose_action": "",
-    "environment": "",
-    "lighting": "",
-    "camera": "",
-    "material": "",
-    "style": "",
-    "quality": ""
-  },
-  "tips": "使用提示、避坑提醒"
-}
-```
+### 2.5 参数基线（2026-10 快照，起始值）
 
-### Markdown 固定排版模板（人类可读）
+| 模型 | 支持模式 | steps | CFG | 分辨率 | 负面词有效度 |
+|---|---|---|---|---|---|
+| Z-Image-Turbo | t2i、i2i（弱） | 8~10 | 1.0~1.5 | 1024×1024 / 16:9 | 低 |
+| FLUX.2-klein | t2i、i2i、inpaint | 4~6（蒸馏）/ 20~28（Base） | 1.0（蒸馏）/ 3.5~4.0（Base） | ≤4MP | 中高 |
+| Krea2 Turbo | t2i、i2i | 6~8 | 1.0~1.5 | 1024×1024 | 中 |
+| MOSS-Image SFT | t2i | 25~30 | 4.0~5.0 | 512~2K 任意比例 | 高 |
+| qwen-image-2.1 | t2i、i2i | 20~30 | 2.5~4.0 | 1024×1024 | 以管线为准 |
+
+> FLUX.2-klein 必须注明变体（蒸馏 / Base），两者步数差 4 倍以上。量化版与采样器差异需实测。
+
+## 3. 输出格式
+
 ```markdown
 ## 🎨 生图提示词结果
 任务类型：{{task_type}}
@@ -125,6 +93,8 @@ description: 当用户要求生成图片的提示词时调用，解析用户的�
 
 ---
 ### ⚙️ 参数建议
+- 模型变体：{{model_variant}}
+- 分辨率比例：{{resolution}}
 - 重绘强度(denoising)：{{denoising_strength}}
 - CFG：{{cfg_scale}}
 - 采样步数：{{steps}}
@@ -139,62 +109,57 @@ description: 当用户要求生成图片的提示词时调用，解析用户的�
 画风：{{style}}
 画质细节：{{quality}}
 
+### 🧩 版式布局（仅 MOSS-Image SFT）
+画布：{{canvas}}
+
+| 元素 | 内容 / 描述 | bbox (x1,y1,x2,y2) | 样式 |
+|---|---|---|---|
+| {{id}} | {{content}} | {{bbox}} | {{style}} |
+
 ### 💡 小贴士
 {{tips}}
 ```
 
-## 5. 模式专属强制前缀规则（非常重要）
-> 1. txt2img（文生图）：直接拼接8段内容，顺序严格：主体，动作姿态，环境背景，光线，镜头参数，材质，画风，画质细节
-> 2. img2img（图生图）正向开头固定追加：
-> `严格保留原图构图、物体位置、相机视角不变，只修改风格与色调，光源方向和原图保持一致，`
-> 3. inpaint（蒙版局部重绘）正向开头固定追加：
-> `画面其余所有元素、构图、人物、光影、色调全部保持不变，仅修改蒙版选中区域；蒙版区域：`
-> 并且追加约束在后半段：`光影与原图光源统一，边缘柔和自然，无缝融合，透视匹配原图`
+> 不适用的小节（负面提示词、版式布局）整节省略，不留空标题。理由栏写推荐依据；用户指定模型写「用户指定」，旧代号写「已映射」。
 
-## 6. 权重与排版约束
-1. 字段顺序**不可打乱**，模型对顺序敏感
-2. 同分类关键词不超过3个，禁止无限制堆砌
-3. 中英文提示词语义一一对应，不要出现中英混杂在同一条提示词内
-4. 提示词使用逗号分隔，长句通顺，不使用多余换行
-5. 负面词优先精简有效，不要把所有负面词一次性塞满
+## 4. 模式强制前缀（中英成对添加）
+1. `txt2img`：无前缀
+2. `img2img`：
+   中：`严格保留原图构图、物体位置、相机视角不变，只修改风格与色调，光源方向和原图保持一致，`
+   英：`Strictly preserve the original composition, object placement and camera angle; only change style and color tone; keep the light direction consistent with the original image,`
+3. `inpaint`：
+   中（开头）：`画面其余所有元素、构图、人物、光影、色调全部保持不变，仅修改蒙版选中区域；蒙版区域：`
+   英（开头）：`All other elements, composition, character, lighting and tone remain unchanged; only the masked area is modified; Mask area:`
+   中（结尾）：`光影与原图光源统一，边缘柔和自然，无缝融合，透视匹配原图`
+   英（结尾）：`light source consistent with the original image, soft natural edges, seamless blending, perspective matches the original`
 
-## 7. 示例输入 & 示例输出（Agent自测用例）
-> 用户输入：一个东亚女生，海边黄昏，风吹裙子，电影氛围感，我想用蒙版只换背景，人物不动
-> 自动识别 task_type = inpaint
-```json
-{
-  "task_type": "inpaint",
-  "recommend_model": "krea2",
-  "alternative_model": "z-image",
-  "reason": "需求侧重黄昏逆光、动态氛围感，krea2光影与动态表现最优，人像微调也可选用z-image",
-  "positive_cn": "画面其余所有元素、构图、人物、光影、色调全部保持不变，仅修改蒙版选中区域；蒙版区域：海边黄昏，橘粉色落日，海面波光粼粼，薄雾逆光轮廓光，85mm f1.4，柔和光晕，电影氛围感，光影与原图光源统一，边缘柔和自然，无缝融合，透视匹配原图",
-  "positive_en": "All other elements, composition, character, lighting and tone of the picture remain unchanged, only the masked area is modified; Mask area: seaside dusk, orange-pink sunset, sparkling sea surface, misty backlight rim light, 85mm f1.4, soft glow, cinematic atmosphere, light source consistent with original image, soft edge, seamless blending, perspective matches original",
-  "negative_cn": "五官扭曲，多余手指，肢体畸形，刺眼硬高光，死黑阴影，文字，水印，色彩冲突，边界生硬",
-  "negative_en": "distorted facial features, extra fingers, deformed limbs, harsh blown highlights, pure black shadow, text, watermark, color conflict, hard edge",
-  "param_suggest": {
-    "denoising_strength": "0.4~0.5",
-    "cfg_scale": "3.5~5",
-    "steps": "25~30"
-  },
-  "disassembly": {
-    "subject": "海边黄昏场景",
-    "pose_action": "无，人物锁定不动",
-    "environment": "海岸，海面，落日天空",
-    "lighting": "黄昏逆光轮廓光，薄雾柔光",
-    "camera": "85mm f1.4，浅景深",
-    "material": "空气薄雾，水面反光",
-    "style": "电影氛围感摄影",
-    "quality": "柔和光晕，细腻光影"
-  },
-  "tips": "蒙版尽量不要紧贴人物轮廓，预留少量缓冲区域，融合更自然；krea2不建议过长负面词，保持精简"
-}
-```
+## 5. 排版与长度约束
+1. 同分类关键词不超过 3 个（MOSS 版式场景中的文案内容不计入配额）
+2. 中英语义一一对应，单条提示词内不混排；镜头参数、型号、品牌名保留原文
+3. 逗号分隔，不用多余换行
+4. 不使用 `(word:1.2)` 权重语法（新模型多按字面量处理，会污染画面）
+5. 正向词长度：
 
-## 8. 边界与异常处理规则
-1. 用户描述信息极少 → 在tips提醒用户补充信息，同时基于现有信息合理补词，不编造离谱主体
-2. 用户同时要求冲突风格（同时写实+像素+水墨）→ 在tips警告风格冲突，优先保留用户第一个风格，其余移入负面词
-3. 用户明确指定模型 → 优先遵从用户指定，在reason说明：用户指定模型，按指定输出
-4. 用户需求不属于4个模型覆盖范围（如3D渲染、视频）→ 拒绝并提示本技能仅支持 z-image / flux2 / krea2 / qwen-image-2.1 文生图、图生图、蒙版重绘
-5. 输入同时有图生图+蒙版需求，优先判定为 inpaint
+| 模型 | 预算 |
+|---|---|
+| Z-Image-Turbo | ≤60 词，文字仅限单行短句 |
+| FLUX.2-klein | ≤150 词 |
+| Krea2 Turbo | ≤80 词 |
+| MOSS-Image SFT | 分段组织，可至 4K token；文案原样保留 |
+| qwen-image-2.1 | ≤150 词 |
+
+## 6. 边界与失败模式
+以上情形均在 tips 说明原因与替代建议：
+1. 需求超出文生图 / 图生图 / 蒙版重绘（视频、3D、音频）→ 明确拒绝，不硬凑
+2. 用户要求互斥风格 → 保留第一个，其余移入负面词
+3. 信息不足 → 可合理补词，但禁止编造与用户描述冲突的主体或场景
+4. 用户指定模型无法胜任（如要求 Z-Image-Turbo 出成段文案）→ 遵从指定，给出更优备选
+
+## 7. 输出前自检
+1. `task_type` 符合 §2.1 判定顺序
+2. `inpaint` / `img2img` 的中英双向前缀齐全（§4）
+3. 正负提示词中英一一对应，无违规混排
+4. 参数与 §2.5 一致，FLUX.2-klein 已注明变体
+5. 长度符合 §5 预算；MOSS 场景附 layout 表格，其它模型不输出该节
 
 ---
