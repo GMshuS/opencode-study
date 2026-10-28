@@ -7,9 +7,8 @@
     "验证成功后再告知用户任务完成。",
     "不要假设代码能正常工作，必须实际运行验证。"
   ],
-  "plugin": [
-    "opencode-notify"
-  ],
+  // 注意：原来这里的 "opencode-notify" 是 V1 插件，V2 无法加载（V1 插件实现不能直接运行）。
+  // 桌面通知功能已由 .opencode/plugins/PromptAppendPlugin.ts 用 node-notifier 实现。
   "experimental": {
     "batch_tool": true,
     "openTelemetry": false,

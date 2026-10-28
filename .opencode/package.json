@@ -1,7 +1,11 @@
 {
   "dependencies": {
     "@opencode-ai/plugin": "1.15.10",
+    "@opencode/plugin": "^2.2.0",
     "node-notifier": "^10.0.1",
     "shescape": "^2.1.0"
+  },
+  "devDependencies": {
+    "@types/node-notifier": "^8.0.5"
   }
 }
