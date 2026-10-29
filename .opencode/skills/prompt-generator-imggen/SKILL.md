@@ -146,7 +146,7 @@ description: 当用户要求生成单张图片的提示词、优化提示词，�
 示例（换背景）：`保留原图的构图、主体位置、相机视角，背景替换为纯白，光源方向与原图一致，` + 其余正向描述
 
 ### 4.2 `inpaint`
-- 中（`mode_prefix_cn`，开头）：`画面其余元素、构图、光影、色调全部不变，仅修改蒙版选中区域；蒙版区域：`
+- 中（`mode_prefix_cn`，开头）：`画面其余元素、构图、光影、色调全部不变，仅修改指定区域；修改区域：`
 - 中（`mode_suffix_cn`，结尾）：`光影与原图光源统一，边缘柔和自然，无缝融合，透视匹配原图`
 - 英（`mode_prefix_en`，开头）：`All other elements, composition, lighting and tone remain unchanged; only the masked area is modified; Mask area:`
 - 英（`mode_suffix_en`，结尾）：`light source consistent with the original image, soft natural edges, seamless blending, perspective matches the original`
