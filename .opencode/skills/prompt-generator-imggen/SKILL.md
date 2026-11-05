@@ -1,35 +1,55 @@
 ---
 name: prompt-generator-imggen
-description: 当用户要求生成单张图片的提示词、优化提示词，或描述画面要求输出中英文正负提示词与推荐模型时调用。按固定结构拆解需求，输出单一 Markdown 结果，覆盖 Z-Image-Turbo、FLUX.2-klein、Krea2 Turbo、MOSS-Image SFT、qwen-image-2.1；三视图、四视图、角色或物体设定表不属于本技能
+description: 生成图片的场景下，当用户要求生成提示词、优化提示词、反推提示词，或描述画面要求输出中英文正负提示词与推荐模型时调用。覆盖文生图、图生图、蒙版局部重绘；按模式分流加载对应参考文档，输出单一 Markdown 结果。
 ---
 
 ## 1. 技能定位
-把用户自然语言拆成 8 段结构，输出中英双语正负提示词，并推荐模型与参数。仅处理单图的文生图、图生图、蒙版重绘；多视图 / 三视图 / 设定表类需求不适用。
+
+把单图生图需求按模式分流，输出中英双语正负提示词，并推荐模型与参数。覆盖文生图（`txt2img`）、图生图（`img2img`）、蒙版局部重绘（`inpaint`）。
 
 本技能只做文本编排：不读取、不搜索图片文件，参考图由出图平台接收，提示词里只用文字引用。
 
+> 本文件是入口与共享层：模式识别、模型推荐、负面词包、参数基线、输出格式、书写风格、边界与自检。
+> 各模式专属的拆解结构与提示词组装方式在 `references/` 下，按 §2.2 **只加载对应的一份**。
+
 ## 2. 解析流程
 
-### 2.1 模式识别（按顺序判定，命中即定）
-1. 含「蒙版 / 局部修改 / 只改这块 / 把这部分换成」+ 指明修改区域 → `inpaint`
-2. 含「参考图 / 保留原图 / 保持构图不变 / 用这张图改 / img2img」→ `img2img`
-3. 仅「参考这张图的画风 / 类似风格」→ `txt2img`（画风参考不是 img2img，写入 style 字段）
-4. 其它 → `txt2img`
+### 2.1 模式识别（语义判定，按顺序命中即定）
 
-### 2.2 拆解字段
-1. subject 主体
-2. pose_action 动作姿态
-3. environment 环境背景
-4. lighting 光线
-5. camera 镜头参数
-6. material 材质
-7. style 画风
-8. quality 画质细节
+以用户**意图**为准，关键词仅作锚点，不作穷举匹配。核心判据是两问：
+① 是否要保留某张具体原图里可识别的画面内容？② 改动覆盖整幅还是局部？
 
-> - 顺序不可打乱；用户未提及的字段填「—」，不为凑格式硬加词
-> - 用户明确不要的元素移入负面词
-> - `img2img` / `inpaint` 不描述主体外观特征，也不编造图中没有的元素
-> - 仅 MOSS-Image SFT 的版式场景额外产出 `layout`（画布比例 + 元素表：内容 / bbox / 样式）
+1. **无原图，或只借用某图的风格 / 配色 / 氛围 / 画风而画面重新生成** → `txt2img`
+   - 借用属性写入风格类，不进入编辑分支。
+   - 锚点短语（非穷举）：`参考…的画风`、`想要这种感觉`、`类似…的风格`、`按这张图的配色`、`照这个氛围`
+   - 本条优先于第 2 条：出现「参考图」不等于 `img2img`。
+2. **以一张已有图为起点，整幅变换且保留其可识别内容** → `img2img`
+   - 锚点短语：`这张照片调成…`、`用我上传的图重绘成…`、`保持人物换个风格`、`整体提亮加胶片颗粒`、`以这张图为底`
+   - 变换覆盖画风、色调、光线、整体质感等整幅属性。
+3. **在一张已有图上，点名局部对象 / 区域做增删改** → `inpaint`
+   - 区域可由对象名、位置词或「除 X 外」给出；用户未明说区域但点名了图中具体元素，也算「可定位」。
+   - 锚点短语：`把…去掉`、`…换成…`、`…改为…`、`只动一下…`、`去掉水印`、`局部调整`
+   - 仅当「蒙版」指编辑操作时才命中；作为画面元素出现（如「蒙版效果海报」）不命中。
+   - 背景 / 天空等大范围区域的整体替换，未指定蒙版时按第 2 条 `img2img` 处理；仅当明确针对小范围对象或指定蒙版时才判 `inpaint`。
+4. **其它** → `txt2img`。
+
+> - 判据冲突或表述既可理解为编辑也可理解为重画时，在 tips 写明按哪种理解输出；
+>   当「是否保留原图内容」显著影响结果时追问一句。**不得因关键词缺失就默认 `txt2img` 并强行编造画面。**
+> - 平台术语（`img2img` / `inpaint` / `蒙版重绘`）命中时直接对应，但仍按上述判据复核意图。
+
+### 2.2 模式分流（唯一分流点，两分支互斥）
+
+§2.1 判定完成后，**只加载对应的一份参考文档，不得同时加载**：
+
+| 判定结果 | 加载 | 该文档负责 |
+|---|---|---|
+| `txt2img` | [references/txt2img.md](references/txt2img.md) | 三类拆解（风格 → 主体 → 场景）、拆解明细、版式 `layout`、要素完备性 |
+| `img2img` / `inpaint` | [references/img2img-inpaint.md](references/img2img-inpaint.md) | 编辑三段结构、锚点 / 融合句、变更项、denoise 联动、蒙版与参考图规则 |
+
+共享规则不随模式变化，一律留在本文件：模型推荐（§2.3）、负面词包（§2.4）、参数基线（§2.5）、输出格式（§3）、提示词书写风格与排版（§4）、边界（§5）、输出前自检（§6）。
+
+> - `txt2img` 输出中不存在锚点句与融合句；编辑模式不套用三类结构与拆解明细。
+> - 正向提示词正文一律按 §4.1 的分号分层规则组装。
 
 ### 2.3 模型推荐
 
@@ -43,27 +63,28 @@ description: 当用户要求生成单张图片的提示词、优化提示词，�
 | 参考图编辑 / 蒙版局部重绘 | FLUX.2-klein 或 qwen-image-2.1 | 两者都原生支持参考图与蒙版编辑；qwen 局部一致性更强 |
 | 成段文字 / 海报版式 / 信息图 / UI / bbox 布局 | MOSS-Image SFT | bbox 布局可控，约 4K token |
 
+> `txt2img` 时，「画面类型 / 媒介」层可直接用于命中本表。
+
 冲突消解：
 1. 命中 ≥2 类 → 首选 + 备选，理由写明取舍
 2. 成段文字与参考图编辑互斥 → 分两步：先 MOSS 出图，再 img2img 精修
 3. MOSS-Image 仅支持 t2i，`img2img` / `inpaint` 不选它
 4. 用户指定模型 → 遵从，理由写「用户指定」
 
-### 2.4 负面词包（直接取用，不自行发明）
+### 2.4 负面词包
 
 | 场景 | 中文 | English |
 |---|---|---|
 | 人像写真 | 五官扭曲，多余手指，肢体畸形，过度磨皮，眼神空洞，比例失调，塑料皮肤，文字，水印 | distorted facial features, extra fingers, deformed limbs, over-smoothed skin, dead eyes, bad proportions, plastic skin, text, watermark |
-| 商业产品渲染 | 形变，结构错误，多余部件，反光杂乱，阴影脏，文字，水印 | deformed shape, wrong structure, extra parts, messy reflections, dirty shadows, text, watermark |
+| 商业产品渲染 | 形变，结构错误，多余部件，反光杂乱，阴影脏，水印 | deformed shape, wrong structure, extra parts, messy reflections, dirty shadows, text, watermark |
 | 国风水墨 | 西式画风，油画笔触，色彩艳俗，五官西化，构图杂乱，穿越感现代物件（手机、电线、霓虹灯） | western style, oil brushstrokes, garish colors, westernized faces, cluttered composition, anachronistic modern objects (phones, power lines, neon signs) |
 | 版式文字（MOSS） | 乱码文字，字体重叠，文字溢出画面，版式错位，层级混乱 | garbled text, overlapping text, text overflow, misaligned layout, broken hierarchy |
 | 通用兜底 | 畸变，模糊，噪点，低质量 | distortion, blurry, noise, low quality |
 
 > - 通用兜底可叠加到任一场景
 > - 版式文字场景**不加**「文字 / 水印」类词 —— 该场景正文本身就是要文字
-> - 是否输出看 CFG：CFG=1 时负面词不参与计算，把排除项改写为正向「仅包含 Y」；CFG>1 时正常输出
 
-### 2.5 参数基线（2026-10 快照 · 经验起始值）
+### 2.5 参数基线
 
 | 模型 | 变体 | 支持模式 | steps | CFG | 分辨率 | denoise（i2i / inpaint） | 负面词有效度 |
 |---|---|---|---|---|---|---|---|
@@ -78,6 +99,7 @@ description: 当用户要求生成单张图片的提示词、优化提示词，�
 > - 分辨率须为 16 的倍数；MOSS 任意比例
 > - Turbo 系无 Base 变体，提质量走二段采样：放大 1.5× + denoise 0.35~0.45；第二段 CFG 取 1.3~1.5 时负面词才生效
 > - 官方可查：Z-Image `max_text_length` 512、FLUX.2 `max_sequence_length` 512、MOSS 约 4K token。其余为经验值，「负面词有效度」为经验判断，非厂商声明
+> - **`img2img` 下 denoise 才真正决定「保留多少原图」**，锚点句只是文本层的软约束：低 denoise 可极简甚至省略；中 denoise 写一句基准锚点；高 denoise 时文本约束有限，在 tips 提示降 denoise 或改走 `inpaint`，而不是把锚点句写得更强。`inpaint` 的基线 denoise 本就较高（蒙版区域需充分重绘），由蒙版保证其余区域保留，不套用此规则
 
 ## 3. 输出格式
 
@@ -89,10 +111,10 @@ description: 当用户要求生成单张图片的提示词、优化提示词，�
 
 ---
 ### ✅ 正向提示词（中文）
-{{mode_prefix_cn}}{{positive_cn}}{{mode_suffix_cn}}
+{{positive_cn}}
 
 ### ✅ Positive Prompt (English)
-{{mode_prefix_en}}{{positive_en}}{{mode_suffix_en}}
+{{positive_en}}
 
 ---
 ### ❌ 负面提示词（中文）
@@ -109,87 +131,85 @@ description: 当用户要求生成单张图片的提示词、优化提示词，�
 - CFG：{{cfg_scale}}
 - 采样步数：{{steps}}
 
-### 📝 拆解明细
+### 📝 拆解明细（仅 txt2img）
+风格：{{style}}
 主体：{{subject}}
-动作姿态：{{pose_action}}
-环境背景：{{environment}}
-光线：{{lighting}}
-镜头参数：{{camera}}
-材质：{{material}}
-画风：{{style}}
-画质细节：{{quality}}
+场景：{{scene}}
+
+### 📝 编辑明细（仅 img2img / inpaint）
+保留锚点：{{anchors}}
+变更项：{{changes}}
+一致性约束：{{consistency}}
 
 ### 🧩 版式布局（仅 MOSS-Image SFT）
 画布：{{canvas}}
 
 | 元素 | 内容 / 描述 | bbox (x1,y1,x2,y2) | 样式 |
 |---|---|---|---|
-| {{id}} | {{content}} | {{bbox}} | {{style}} |
+| {{id}} | {{content}} | {{bbox}} | {{element_style}} |
 
 ### 💡 小贴士
 {{tips}}
 ```
 
-> 不适用的小节整节省略。`mode_prefix_*` / `mode_suffix_*` 按 §4 填入，`txt2img` 时四个槽位都留空。
+> - 不适用的小节整节省略；`📝 拆解明细` 与 `📝 编辑明细` 二选一，不并存。
+> - `{{positive_cn}}` / `{{positive_en}}` 由对应参考文档按分段结构组装好（编辑模式含锚点句与融合句），本模板不再设独立的前后缀槽位。
+> - 正向提示词正文按 §4.1 分号分层；`📝` 明细小节是对正文的核对视图，用列表、不用分号。
+> - 理由栏写推荐依据；用户指定模型写「用户指定」。
 
-## 4. 模式前缀
+## 4. 提示词书写风格与约束
 
-`txt2img` 不加前缀。`img2img` / `inpaint` 的前缀是**直接拼在正向提示词最前（和最后）的整句**，写入 §3 的 `{{mode_prefix_cn}}`、`{{mode_prefix_en}}`、`{{mode_suffix_cn}}`、`{{mode_suffix_en}}` 槽位。
+### 4.1 书写风格
 
-### 4.1 `img2img`
-- 中（`mode_prefix_cn`）：`保留原图的构图、主体位置、相机视角，只调整风格与色调，光源方向与原图一致，`
-- 英（`mode_prefix_en`）：`Preserve the original composition, subject placement and camera angle; only change style and tone; keep the light direction consistent with the original image,`
+提示词是「给模型的画面清单」，不是文章。原则：简明扼要，一个属性只写一次。
 
-> - 用户要换背景 / 换服装 / 换姿势时，把该项从「保留」改成具体要求（如「背景替换为纯白」）
-> - denoise >0.6 时把「保留 / Preserve」改成「尽量保留 / Try to preserve」，否则画面会变形
+- 用词语或短语，避免完整长句、叙事铺陈与因果解释。
+- **段内用逗号，段间用分号**：中文 `，…；` / 英文 `, …; `。
+  - `txt2img`：`风格，…；主体，…；场景，…`
+  - 编辑模式：`锚点，…；变更项，…；一致性约束，…`（无融合段时只有两段）
+- 分号是**连接符不是占位符**：某段省略时连同其分号一起省略，分号数 = 实际段数 − 1；禁止连续分号、禁止句尾分号。
+- 分号只用于正向提示词正文的段间；负面词包、`📝` 明细列表、MOSS 版式文案均不用分号。
+- 版式文案原样保留，文案内自带标点不算结构分隔符；正文内除段间外不得再出现分号。
+- 同一属性不重复表达，不堆同义词（如 beautiful, gorgeous, stunning 连用）。
+- 不用「非常 / 极其 / 超」等程度副词，不用「很美 / 震撼 / 高级感」等抽象评价词；改写为可观察的画面特征。
+  例：`非常唯美的逆光人像` → `侧逆光，发丝边缘高光，浅景深`
+- 短而准优于长而全；不设字数下限，不为凑长度扩写。
 
-示例（换背景）：`保留原图的构图、主体位置、相机视角，背景替换为纯白，光源方向与原图一致，` + 其余正向描述
+示例：
 
-### 4.2 `inpaint`
-- 中（`mode_prefix_cn`，开头）：`画面其余元素、构图、光影、色调全部不变，仅修改指定区域；修改区域：`
-- 中（`mode_suffix_cn`，结尾）：`光影与原图光源统一，边缘柔和自然，无缝融合，透视匹配原图`
-- 英（`mode_prefix_en`，开头）：`All other elements, composition, lighting and tone remain unchanged; only the masked area is modified; Mask area:`
-- 英（`mode_suffix_en`，结尾）：`light source consistent with the original image, soft natural edges, seamless blending, perspective matches the original`
+```text
+写实人像摄影，胶片质感；一位银发女性，米白色针织衫，侧身回望，发丝微动；午后窗边，侧逆光，50mm 视角，浅景深
+Photorealistic portrait, film grain; a silver-haired woman, cream knit sweater, looking back over her shoulder, hair slightly moving; by a window in the afternoon, side backlight, 50mm lens, shallow depth of field
+```
 
-## 5. 排版与长度约束
+### 4.2 硬上限与裁剪
 
-### 5.1 长度（只有上限，没有下限）
-提示词长度是字段写完之后的结果，不是目标。**禁止为达到字数堆砌同义词**（如 beautiful, gorgeous, stunning 连用）。
+只保留官方可查的 token 上限，作为「不得超出」的硬边界，不作配额或目标：Z-Image 512（可调 1024）、FLUX.2 512、MOSS-Image 约 4K；其余模型未公布，按 §4.1 书写。锚点句与融合句计入其中。
 
-| 模型 | token 上限（官方） | 建议上限（含前缀，超出则裁剪） |
-|---|---|---|
-| Z-Image-Turbo | 512（可调 1024） | 约 150 词 / 220 汉字 |
-| Krea2 Turbo | 未公布 | 约 100 词 / 150 汉字 |
-| FLUX.2-klein 蒸馏 | 512 | 约 80 词 / 120 汉字 |
-| FLUX.2-klein Base | 512 | 约 150 词 / 220 汉字 |
-| MOSS-Image SFT | 约 4K | 不限（分段组织，文案原样保留） |
-| qwen-image-2.1 | 未公布 | 约 180 词 / 270 汉字 |
+仅在确实接近硬上限时触发裁剪：先删画质词与泛化修饰 → 再删材质与镜头细节 → 必须保留风格、主体、场景（编辑模式则为变更项）的核心描述；裁掉的内容不转入负面词。
 
-> 建议上限是「再写也不会更好」的拐点，不是配额；远低于上限完全正常，短而准优于长而全。
+### 4.3 排版规则
 
-### 5.2 要素不完备时
-主体、动作 / 姿态、场景 / 背景三项必须有值。缺则先追问；问不到按默认取值并在 tips 说明。**不得堆形容词补足。**
+1. 中英一一对应，单条内不混排；型号、品牌名保留原文。
+2. 中文用中文逗号与全角分号、英文用英文逗号与半角分号；不用多余换行。
+3. 不用 `(word:1.2)` 权重语法；强调改用语序前置或独立短句。
 
-### 5.3 超上限裁剪顺序
-先裁画质细节 → 材质 → 镜头参数；必须保留主体、版式、风格。裁掉的内容不转入负面词。
+## 5. 边界与失败模式
 
-### 5.4 排版规则
-1. 同分类 ≤3 个（颜色 / 材质 / 光影 / 镜头 / 风格 / 画质）
-2. 中英一一对应，单条内不混排；型号、品牌名保留原文
-3. 逗号分隔，不用多余换行
-4. 不用 `(word:1.2)` 权重语法；强调改用语序前置或独立短句
-
-## 6. 边界与失败模式
 以上情形均在 tips 说明原因与替代建议：
-1. 需求超出文生图 / 图生图 / 蒙版重绘（视频、3D、音频）→ 明确拒绝
+1. 需求不属于单图静态画面生成 → 明确拒绝，并说明本技能范围
 2. 用户要求互斥风格 → 保留第一个，其余移入负面词
-3. 信息不足 → 按 §5.2 追问或取默认，禁止编造与用户描述冲突的主体
+3. 信息不足 → 按对应参考文档的要素完备性规则追问或取默认，禁止编造与用户描述冲突的主体
 4. 用户指定模型无法胜任（如 Z-Image 出成段文案）→ 遵从指定，给出更优备选
+5. `img2img` / `inpaint` 的提示词文本无法保证逐项「不变」→ 在 tips 说明分别由 denoise（`img2img`）或蒙版（`inpaint`）控制保留程度，不靠排他措辞
 
-## 7. 输出前自检
-1. `task_type` 符合 §2.1；「仅画风参考」未误判为 img2img
-2. `img2img` / `inpaint` 的中英前缀齐全，已填入 `mode_prefix_cn/en`、`mode_suffix_cn/en`
-3. 正负提示词中英一一对应，无混排
-4. 参数与 §2.5 一致，已注明 FLUX.2-klein / MOSS-Image 变体；inpaint 用 inpaint 的 denoise
-5. 长度（含前缀）未超 §5.1；超限已按 §5.3 裁剪；主体 / 动作 / 场景齐全，无为凑字数堆砌
-6. MOSS 场景附 layout 表格；负面词按 CFG 规则输出
+## 6. 输出前自检
+
+1. 按 §2.1 两问判据命中 `task_type`；仅借用风格 / 配色未误判为编辑；局部增删改未因缺关键词误判为 `txt2img`；歧义已在 tips 说明
+2. 按 §2.2 只加载了对应的一份参考文档，未混用两套结构
+3. 正向提示词段内逗号、段间分号；分号数 = 段数 − 1，无连续 / 句尾分号；中英分号数量相等、词条一一对应、无混排
+4. 参数与 §2.5 一致，已注明 FLUX.2-klein / MOSS-Image 变体；`inpaint` 用 inpaint 的 denoise；`img2img` 的高 denoise 已在 tips 提示
+5. 未堆同义词 / 抽象评价词，画质词未默认输出；未超官方 token 硬上限，超限已按 §4.2 裁剪；主体（或文字内容）与场景齐全
+6. `txt2img` 三类顺序为 风格 → 主体 → 场景，材质归属无重复，`📝 拆解明细` 已填
+7. 编辑模式锚点句无「只 / 仅 / 全部不变 / 保持不变」等绝对化措辞，排他需求已走负面词，`📝 编辑明细` 已填
+8. MOSS 场景附 `layout` 表格；负面词按 CFG 规则输出
