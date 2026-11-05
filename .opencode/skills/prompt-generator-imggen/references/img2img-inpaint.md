@@ -1,7 +1,5 @@
 # img2img / inpaint 编辑结构
 
-本文件仅在 `task_type = img2img` 或 `inpaint` 时加载。共享规则见主文件 `../SKILL.md`。
-
 ## 1. 核心原则
 
 编辑提示词描述的是「改动」，不是「一幅画面」。三段顺序固定：
@@ -10,15 +8,7 @@
 2. **变更项**（段 2）：本次要改的东西
 3. **一致性约束**（段 3，仅 `inpaint`）：与周围画面融合
 
-先抽出用户的变更项，再据此选锚点；不套固定模板、不在模板上打补丁。不套用 `txt2img` 的三类结构，不填「📝 拆解明细」。
-
-### 为什么不用绝对化措辞
-
-- 扩散模型的文本编码器擅长表达「要什么」，不擅长执行「不要改什么」；`只 / 仅 / 全部不变` 之类排他词既约束不住，又会占住靠前 token 把真正的画面描述压到后面。
-- 真正决定「保留多少原图」的是 `denoise` 与蒙版，不是文本。锚点句只是软约束。
-- 固定写「保留构图」在换背景 / 换姿势时是错的 —— 构图本来就会变。
-
-因此：**用「以…为基准 / 与…一致 / 延续原图」替代「不变 / 保持不变」，直接删掉「只 / 仅 / only」；用户「不要改 X」走负面词（主文件 §2.4）。**
+先抽出用户的变更项，再据此选锚点；不套固定模板、不在模板上打补丁。不填「📝 拆解明细」。
 
 ## 2. 段结构与中英对照
 
@@ -65,7 +55,7 @@ based on the original composition, lighting and tone; the sky becomes sunset clo
 | 仅修改 / only modify | `修改区域` / `edit area` |
 | 保持不变 / keep unchanged | `与…一致` / `consistent with` |
 | 必须 / must | 删除，靠 denoise 与语序 |
-| 不要改变 / do not change | 移入负面词（主文件 §2.4），或交给蒙版 |
+| 不要改变 / do not change | 按主文件 §2.4 走负面词或正向排除句，或交给蒙版 |
 | 保留构图（固定写法） | 按变更项动态选锚点 |
 
 ## 4. denoise 联动（仅 `img2img`）
@@ -85,8 +75,22 @@ based on the original composition, lighting and tone; the sky becomes sunset clo
 
 - 不描述原图已有的主体外观特征，不编造图中没有的元素；主体只写类别词或「原图主体」。
 - 用户要换背景 / 换服装 / 换姿势时，把该项写成具体要求，同时按本文档 §2.1 的对应关系调整锚点。
-- 用户明确不要的元素移入负面词（主文件 §2.4），不写进段 1。
+- 用户明确不要的元素按主文件 §2.4 处理，不写进段 1。
 - 正向提示词三段拼好后整体填入主文件 §3 的 `{{positive_cn}}` / `{{positive_en}}`，模板不设独立前后缀槽位。
 - 填「📝 编辑明细」三行：保留锚点 / 变更项 / 一致性约束；`img2img` 的「一致性约束」、以及低 denoise 下省略段 1 时的「保留锚点」均记 `—`。
 - 参数建议中 `denoise` 必填；`inpaint` 用 inpaint 专属的 denoise 区间。
 - MOSS-Image 仅支持 t2i，本文件两种模式都不选它。
+
+## 6. 编辑模式负面词
+
+针对「改动原图」特有的失败。只在主文件 §2.4 判定 `CFG>1` 时输出。
+
+| 模式 | 中文 | English |
+|---|---|---|
+| `img2img` | 身份漂移，结构变形，原画风残留，材质割裂，多余主体，构图错乱 | identity drift, structural deformation, residual original style, inconsistent material texture, extra subjects, broken composition |
+| `inpaint` | 边缘错位，融合不自然，拼接痕迹，局部畸变，修改区域外被改动 | misaligned edges, unnatural blending, visible seams, local distortion, changes outside the masked area |
+
+> - 可叠加通用兜底（畸变，模糊，噪点，低质量 / distortion, blurry, noise, low quality）。
+> - 用户明确排除的元素优先追加，标注「用户指定」；除此之外不自行发明。
+> - 局部重绘涉及人物时可追加五官扭曲、多余手指等条目，但不加载另一分支的文档。
+> - `CFG=1` 时本表整体不输出，处理见主文件 §2.4。
