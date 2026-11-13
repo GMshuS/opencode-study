@@ -1,6 +1,8 @@
 # explore Agent 设计文档
 
-> Agent 定义：`.opencode/agents/explore/explore.md`
+> Agent 定义：`.opencode/agents/explore/explore.md`（§3.2 只保留加载编排）
+> 完整输出定义：`templates/{generic,backend,frontend}.md`（与各自 agent 定义同级）
+> 同步脚本：`.opencode/agents/sync-explore.sh`（唯一源 → codebuddy 副本）
 > 命令入口：`.opencode/commands/explore/explore.md`（`/explore [探索主题]`）
 
 ---
@@ -61,7 +63,7 @@ explore 是一个**自由探索模式**：深度思考、问题分析、选项�
 
 ### 2.1 架构总览
 
-单 primary Agent，无子代理编排。能力全部来自工具组合，写入面被权限白名单收敛到唯一点。
+单 primary Agent，无子代理编排。能力全部来自工具组合，写入面被权限白名单收敛到唯一点。**每份模板都是自包含的完整输出定义**，放在与 agent 定义同级的 `templates/` 目录；探索期不进上下文，仅在「确认存档」后延迟加载用户选中的那一份，成为提示词的一部分，不进入写入面。
 
 ```mermaid
 flowchart LR
@@ -76,7 +78,8 @@ flowchart LR
     end
 
     AG --> R & B & W & T
-    AG -.->|"write 白名单<br/>仅经用户同意"| FS[("dev-flow/explore/<br/>explore-notes-*.md")]
+    AG -.->|"write 白名单<br/>仅经用户同意"| FS[("explore/<br/>explore-*.md")]
+    TPL[("templates/*.md<br/>同级 · 完整输出定义")] -.->|"授权后 · 只加载选中的一份"| AG
 
     AG ==>|"思路清晰 · 用户确认"| DEV["/dev-flow 结构化开发"]
     AG ==>|"问题定位清楚 · 用户确认"| BF["/bugfix-flow 根因修复"]
@@ -84,29 +87,43 @@ flowchart LR
 
 ### 2.2 目录结构
 
-**静态定义**（仓库内，共 2 个文件）：
+**静态定义**（仓库内：Agent 定义 + 命令入口 + 完整输出定义模板族）：
 
 ```text
-.opencode/
-├── agents/explore/
-│   └── explore.md        # Agent 定义（frontmatter 配置 + 立场提示词）
-└── commands/explore/
-    └── explore.md        # 命令入口：/explore [主题] → 转发 @explore
+.opencode/agents/
+├── sync-explore.sh                # 单一源 → codebuddy 副本（正文 + templates）
+└── explore/
+    ├── explore.md                 # Agent 定义（frontmatter 配置 + 立场提示词 + §3.2 加载编排）
+    └── templates/                 # 唯一手写源：完整输出定义，各自自包含
+        ├── generic.md              # 兜底 + 弱结构：最小完整输出定义
+        ├── backend.md              # 完整输出定义 + 后端填写指引（章节条件必填）
+        └── frontend.md             # 完整输出定义 + 前端填写指引（章节条件必填）
+.opencode/commands/explore/
+└── explore.md                     # 命令入口：/explore [主题] → 转发 @explore
+.codebuddy/agents/explore/         # 生成副本（sync-explore.sh 产出，不手写）
+├── explore.md                     # 同一正文，仅 yaml 头不同
+└── templates/                     # 三份模板副本，frontmatter 内含生成标记
 ```
 
 **运行产物**（项目根下按需生成，全 Agent 唯一可写区）：
 
 ```text
-./dev-flow/explore/
-└── explore-notes-2026-08-24-auth-refactor.md
-#   └── explore-notes-{YYYY-MM-DD}-{topic-slug}.md
+./explore/
+└── explore-auth-refactor-2026-09-16.md
+#   └── explore-{topic-slug}-{YYYY-MM-DD}.md
 ```
 
 | 要素 | 规则 |
 |------|------|
-| 写入时机 | 仅当讨论中自然形成有价值结论 **且用户明确同意** 后才创建 |
-| 文件格式 | YAML frontmatter 标记 `date` / `topic`，正文自由格式，**不套模板** |
-| 下游用途 | 文件路径可作为 `/dev-flow <需求文档路径>` 的输入 |
+| 写入时机 | 仅当讨论中自然形成有价值结论 **且用户明确回复「确认存档」** 后才创建 |
+| 文件格式 | **由所选模板自包含定义**：frontmatter 字段集、H2 章节集合与规则、产物骨架、落笔前自检，全部随模板走；`explore.md` 不含任何字段表或章节表。**对话自由，产物不自由** |
+| 产物地址 | 目录 `explore/`、命名 `explore-{topic-slug}-{YYYY-MM-DD}.md` **只在 `explore.md` §3.2 定义一次**，与 `permission.edit` 白名单绑定；模板不重复描述，也不得改变写入地址 |
+| 模板来源 | 落笔后扫描 `templates/*.md`（**相对本 agent 定义所在目录**，不写项目相对路径），只读 frontmatter 元信息；用户一次确认选定后**只加载选中模板全文**，该文件即提示词的一部分；`template: {name}@{version}` 写入产物以便复现；模板不得放进产物目录 |
+| 分发 | 两侧 `development.sh` 均为整目录 `cp -r`，agent 定义与同级 `templates/` 一起部署到用户目录；`sync-explore.sh` 负责把唯一源同步成 codebuddy 副本并校验一致性，两个 `development.sh` 无需改动 |
+| 兜底 | `generic.md` 随 agent 分发、不可删光；目录为空 / 文件损坏 / 无合法候选时作为最小完整输出定义，避免「已授权但无输出定义」的死局 |
+| 下游用途 | 文件路径可作为 `/dev-flow <需求文档路径>` 的输入；笔记只保证**结构可读**与**模板版本可复现**，怎么取、取哪些由下游自行决定 |
+
+> Agent 定义 §3.2 只保留：行为边界、落笔触发、最小加载编排（扫描 / 候选 / 一次确认 / 延迟加载 / 兜底）与「按模板自检」一句。**新增或替换模板只需在源目录 `templates/` 放一份自包含 md，运行 `sync-explore.sh` 即可，不必改 agent 定义**；模板可自由增删章节与字段，不描述产物地址，也不规定下游取用方式。
 
 ### 2.3 配置属性
 
@@ -120,7 +137,7 @@ flowchart LR
 | `tools` | read / bash / webfetch / task / write 开，`edit` 关 | 探测类工具齐备支撑"查码 + 调研 + 并行研究"；`edit` 显式关闭，杜绝源码改写 |
 | `permission.bash` | `"*": "allow"` | git 历史、目录扫描等探测命令免确认 |
 | `permission.webfetch` | `allow` | 外部技术调研免确认（`webfetch` 仅支持简写值，不支持 glob 对象） |
-| `permission.edit` | `"*": "deny"` + `"dev-flow/explore/*": "ask"` | **关键安全设计**：`edit` 这一把钥匙同时管控 write / edit / apply_patch；全局 deny，仅探索笔记路径 ask |
+| `permission.edit` | `"*": "deny"` + `"explore/*": "ask"` + `"**/explore/*": "ask"` | **关键安全设计**：`edit` 这一把钥匙同时管控 write / edit / apply_patch；全局 deny，仅探索笔记路径 ask |
 
 权限设计的核心是**宽读取、窄写入的漏斗形**：
 
@@ -129,13 +146,14 @@ flowchart LR
 ┌─────────────────────┐           ┌──────────────────────┐
 │ read  bash *        │  全库可见  │ edit ──▶ 提议 → 用户  │
 │ webfetch *  task    │  ───────▶ │ 同意 ──▶ 仅允许写入    │
-└─────────────────────┘           │ dev-flow/explore/*    │
+└─────────────────────┘           │ explore/*             │
                                   └──────────────────────┘
                                         源代码零写入
 ```
 
 > **注意**：`write` 不是合法的 permission key，`permission.write` 不会生效——写入必须由 `permission.edit` 收敛。
 > `tools` 仅有 `true/false` 两态，无法表达路径级白名单，因此不能替代 `permission.edit` 承担写入收敛职责。
+> 模板放在与 agent 定义同级的 `templates/`（仓库内只读资源），正因为 codebuddy 侧 agent 无 `permission` 段、工具全局可写，模板若进产物目录会被误写。
 
 ---
 
@@ -179,13 +197,15 @@ stateDiagram-v2
 
 对话中的典型动作：澄清提问、挑战假设、重新框定问题、绘制 ASCII 架构图、构建选项对比表、暴露风险与未知、用 Task 工具并行研究多条线索。
 
+> 模板不介入上述循环：**探索期上下文里没有模板**，用户无需考虑笔记格式；模板只在「确认存档」之后延迟加载选中的一份，作用于产物，不回溯约束对话过程（Agent 定义 §3.1 的授权规则保持不变）。
+
 ### 3.3 结束方式：没有终点，只有四种出口
 
 ```mermaid
 flowchart LR
     EX(["探索会话<br/>任意时刻"]) --> O1["① 流入开发<br/>思路清晰了 →<br/>提议 /dev-flow &lt;需求&gt;"]
     EX --> O2["② 只是澄清<br/>获得了需要的理解<br/>直接结束"]
-    EX --> O3["③ 产生笔记<br/>用户同意后写入<br/>explore-notes-*.md"]
+    EX --> O3["③ 产生笔记<br/>用户同意后写入<br/>explore-*.md"]
     EX --> O4["④ 留待以后<br/>思考本身即价值<br/>随时 /explore 继续"]
 
     style O2 fill:#f9f9f9,color:#666
@@ -207,19 +227,19 @@ flowchart LR
     CLAR -->|"缺陷要修复"| BF["bugfix-flow<br/>分析→修复→验证→提交"]
     CLAR -.->|"只是想明白了<br/>暂不做"| DONE(["结束"])
 
-    NOTES[("dev-flow/explore/<br/>explore-notes-*.md")] -.->|"笔记路径作为<br/>需求文档输入"| DEV
+    NOTES[("explore/<br/>explore-*.md")] -.->|"笔记路径作为<br/>需求文档输入"| DEV
 ```
 
 **上下文如何交接给下游**（松耦合，两种方式）：
 
 | 交接方式 | 用法 | 说明 |
 |----------|------|------|
-| 显式交接 | `/dev-flow dev-flow/explore/explore-notes-2026-08-24-auth-refactor.md` | 探索笔记直接作为需求文档输入，与 brainstorm.md 同位 |
+| 显式交接 | `/dev-flow explore/explore-auth-refactor-2026-09-16.md` | 探索笔记直接作为需求文档输入，与 brainstorm.md 同位；章节结构按所选模板可读 |
 | 口头交接 | `/dev-flow 实现基于 Postgres 的会话存储` | 探索中达成的结论由用户复述为需求描述 |
 
 **与 bugfix-flow 的关系**：修复前先用 `/explore 登录报 500 是怎么回事` 把根因和影响面讨论清楚，再带着结论进入 `/bugfix-flow`，可显著减少方案返工。
 
-> 松耦合说明：下游 flow **并不依赖**探索笔记存在——没做过探索也能直接启动 dev-flow / bugfix-flow；笔记只是提升输入质量的可选加速器。
+> 松耦合说明：下游 flow **并不依赖**探索笔记存在——没做过探索也能直接启动 dev-flow / bugfix-flow；笔记只是提升输入质量的可选加速器。本轮未改 `dev-plan` 侧的显式解析；**上游只保证结构可读与 `template: {name}@{version}` 可复现，不规定下游如何取用**，取用方式由下游自己决定，避免下游改动使上游的映射表失效。
 
 ---
 
@@ -230,4 +250,6 @@ flowchart LR
 
 | 日期 | 观察到的漂移 | 补的约束（落点） | 理由 |
 |------|--------------|------------------|------|
-| — | （暂无） | — | — |
+| 2026-11-13 | 6/6 份真实笔记只有 `date` + `topic`，0/6 有 `source`、0/6 有状态标注，章节名各写各的；agent 定义写了字段但产物不生效 | 落笔前校验动作 + 模板独立成文件（`templates/`） | explore 与 dev-plan 之间缺字段级契约，靠 LLM 意会转译，评审与交接都不稳定；「定义写清 ≠ 字段会出现在产物」，故须自带落笔前校验 |
+| 2026-11-13 | 初版把契约写在 `explore.md`、骨架写在模板，形成两处真相源：模板不是完整输出定义、改模板要改 agent；§3.2 膨胀到 137 行，同时承担行为准则 + schema 注册表 + 流程实现；`assert L1 章节 all in template` 使骨架无法特性化 | 取消 L1/L2 两层拆分，**输出定义全量下沉**：每份模板自包含字段集 / 章节规则 / 落笔前自检（`explore-template/v2`）；`explore.md` §3.2 压到约 25 行，只留行为边界、最小加载编排与兜底；删除 `assert` 与硬编码 `check_L1`，改为授权后延迟加载选中模板全文 | 模板加载进提示词后本身就是完整输出定义，无需在 agent 里复述；且 `dev-plan` 当前仅「合并到用户需求」，L1 的下游收益尚未兑现而成本立即发生。保留的只是先于模板存在的行为红线与加载自举规则，不属于 L1 契约 |
+| 2026-11-13 | 审查发现：agent 定义写项目相对路径 `.opencode/agents/explore/templates`，部署到用户目录后失效；模板重复「产物路径与命名」与 agent 定义打架；模板内「下游映射（供 dev-plan 取用）」形成反向依赖且随下游改动失效；5 个定义节与 8 个产物 H2 同级，排版混乱 | 模板路径改为相对 agent 定义的 `templates/*.md`；`sync-explore.sh` 把唯一源同步成 codebuddy 副本（两侧 `development.sh` 整目录分发，无需改动）；删除模板的「产物路径与命名」与「下游映射」两节；模板重排为「输出格式定义 + 约束与要求」两大块，产物骨架用 fenced code block 包裹 | 相对路径保证部署可移植；产物地址属于 agent 写入动作并与 `permission.edit` 白名单绑定，只能有一处；上游产物定义不规定下游取用方式；fenced 骨架隔离 H2 层级冲突 |
